@@ -1,7 +1,7 @@
 'use strict';
 
 import * as errors from './errors';
-import { Provider, TransactionRequest, TransactionResponse, TransactionReceipt, BlockTag, AccountState } from './providers/abstract-provider';
+import { Provider, TransactionRequest, TransactionResponse, TransactionReceipt, BlockTag, AccountState, MultiSigPendingTx } from './providers/abstract-provider';
 import { Signer } from './abstract-signer';
 
 import { defineReadOnly, resolveProperties, checkProperties } from './utils/properties';
@@ -35,8 +35,6 @@ export class MultiSigWallet extends Signer {
 
     private _multisigAccountState: AccountState;
     private accountNumber: number;
-
-
 
     constructor(groupAddress: string, signerOrProvider: Signer | Provider) {
         super();
@@ -256,11 +254,9 @@ export class MultiSigWallet extends Signer {
             transaction.fee = signer.provider.getTransactionFee(undefined, undefined, { tx: transaction });
 
             return signer.sendTransaction(transaction, overrides).then((response) => {
-
                 // We should consider that the signer signed this message,
                 // so the nonce for calculating groupAddress will be signed_nonce+1
                 let groupAddress = getMultiSigAddress(signerAddress, signer.getNonce()+1)
-
                 if (overrides && overrides.sendOnly) {
                     return response;
                 }
@@ -357,16 +353,18 @@ export class MultiSigWallet extends Signer {
      * @param blockTag reserved for future
      * @param overrides options
      */
-    public getPendingTx(txID: string, blockTag?: BlockTag, overrides?: any) {
+    public getPendingTx(txID: string, blockTag?: BlockTag, overrides?: any): Promise<MultiSigPendingTx> {
         if (!this.signer) {
             errors.throwError('query multisig pending tx require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
-
         if (!this.groupAddress) {
             errors.throwError('query multisig pending tx group address', errors.MISSING_ARGUMENT, { args: [this.groupAddress] });
         }
 
         return this.provider.getMultiSigPendingTx(this.groupAddress, txID, blockTag).then((result) => {
+            if (!result) {
+                errors.throwError('Pending tx is not available', errors.NOT_AVAILABLE, { arg: 'groupAddress' });
+            }
             return result;
         });
     }
@@ -412,7 +410,6 @@ export class MultiSigWallet extends Signer {
         return this.provider.getBalance(this.groupAddress, blockTag);
     }
 
-
     public getAccountNumber(blockTag?: BlockTag) {
         if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { args: [this.provider] }); }
 
@@ -422,7 +419,6 @@ export class MultiSigWallet extends Signer {
                 return Promise.resolve(this.accountNumber);
             });
         }
-
         return Promise.resolve(this.accountNumber);
     }
 
