@@ -1,7 +1,7 @@
 'use strict';
 
 import { arrayify, concat, joinSignature } from './utils/bytes';
-import { BigNumber, BigNumberish } from './utils/bignumber';
+import { BigNumberish } from './utils/bignumber';
 import { hashMessage } from './utils/hash';
 import { defaultPath, HDNode, entropyToMnemonic, fromMnemonic } from './utils/hdnode';
 import { isSecretStorageWallet } from './utils/json-wallet';
@@ -32,7 +32,7 @@ export class Wallet extends AbstractSigner {
     readonly provider: Provider;
     private readonly signingKey: SigningKey;
 
-    private accountNumber: BigNumber;
+    private accountNumber: number;
 
     constructor(privateKey: SigningKey | HDNode | Arrayish, provider?: Provider) {
         super();
@@ -109,7 +109,7 @@ export class Wallet extends AbstractSigner {
     }
 
     clearNonce() {
-        this.nonce = undefined;
+        this.nonce = null;
     }
 
     sendTransaction(transaction: TransactionRequest, overrides?: any): Promise<TransactionResponse> {
@@ -160,16 +160,16 @@ export class Wallet extends AbstractSigner {
             else {
                 // Control the nonce to cater bulk transaction submission
                 if (overrides && overrides.bulkSend) {
-                    if (undefined !== this.nonce) {
-                        if (this.nonce.gte(tx.nonce)) {
-                            tx.nonce = this.nonce.add(1);
+                    if (null !== this.nonce) {
+                        if (this.nonce >= (tx.nonce)) {
+                            tx.nonce = this.nonce + 1;
                         }
                     }
                 }
                 this.nonce = tx.nonce;
                 sequence = tx.nonce.toString();
             }
-            
+
             let payload = {
                 account_number: accountNumber.toString() || '0',
                 chain_id: tx.chainId,
@@ -189,8 +189,6 @@ export class Wallet extends AbstractSigner {
                 return value;
             });
             payload = sortObject(payload);
-
-            console.log("transaccccccccctionssss     " + JSON.stringify(payload));
 
             // Log signature payload
             if (overrides && overrides.logSignaturePayload) {

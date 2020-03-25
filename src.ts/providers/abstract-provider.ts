@@ -93,12 +93,12 @@ export interface AccountState {
             type: string,
             value: string
         },
-        accountNumber: BigNumberish,
-        sequence: BigNumberish,
+        accountNumber: number,
+        sequence: number,
         multisig: {
             owner: string,
-            threshold: Number,
-            counter: BigNumberish,
+            threshold: number,
+            counter: number,
             signers: string[],
             pendingTxs: any,
         }
@@ -136,7 +136,7 @@ export interface BlockTransaction {
     hash: string,
     logs: Array<TransactionLog> | string,
     events: Array<TransactionEvent>,
-    nonce: BigNumberish,
+    nonce: number,
     transactionIndex: number
 };
 
@@ -177,8 +177,8 @@ export type TransactionRequest = {
         signatures?: Array<TransactionSignature>,
         memo?: string
     },
-    nonce?: BigNumberish | Promise<BigNumberish>,
-    accountNumber?: BigNumberish | Promise<BigNumberish>,
+    nonce?: number | Promise<number>,
+    accountNumber?: number | Promise<number>,
     chainId?: string | Promise<string>,
     fee?: TransactionFee | Promise<TransactionFee>
 };
@@ -191,7 +191,7 @@ export interface TransactionResponse extends TransactionReceipt {
 export interface DeliverTransaction {
     hash: string,
     log: TransactionLog,
-    nonce: BigNumberish,
+    nonce: number,
 }
 
 export interface TransactionReceipt extends Transaction {
@@ -203,7 +203,7 @@ export interface TransactionReceipt extends Transaction {
     payload: any,
     hash: string;
     blockNumber?: number,
-    nonce: BigNumberish,
+    nonce: number,
     status: number,
     confirmations: number,
 };
@@ -234,12 +234,12 @@ export abstract class Provider implements OnceBlockable {
     abstract getNFTokenItemState(symbol: string | Promise<string>, itemID: string, blockTag?: BlockTag | Promise<BlockTag>): Promise<NFTokenItemState>;
 
     abstract getAccountState(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<AccountState>;
-    abstract getAccountNumber(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
+    abstract getAccountNumber(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
     abstract getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
 
     abstract getMultiSigPendingTx(addressOrName: string | Promise<string>, txID: string, blockTag?: BlockTag | Promise<BlockTag>): Promise<MultiSigPendingTx>;
 
-    abstract getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber>;
+    abstract getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number>;
 
     abstract sendTransaction(signedTransaction: string | Promise<string>, overrides?: any): Promise<TransactionResponse>;
 
@@ -277,4 +277,3 @@ export abstract class Provider implements OnceBlockable {
 }
 
 //defineReadOnly(Signer, 'inherits', inheritable(Abstract));
-

@@ -261,7 +261,7 @@ if ("" != nodeProvider.kyc.middleware) {
         it("Get transaction count (nonce)", function () {
             return wallet.getTransactionCount().then((nonce) => {
                 expect(nonce).to.exist;
-                if (!silent) console.log(indent, "Nonce:", nonce.toString(), "(" + wallet.address + ")");
+                if (!silent) console.log(indent, "Nonce:", nonce, "(" + wallet.address + ")");
             });
         });
 

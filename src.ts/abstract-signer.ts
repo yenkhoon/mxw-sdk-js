@@ -7,12 +7,11 @@ import { Provider } from './providers/abstract-provider';
 // Imported Types
 import { Arrayish } from './utils/bytes';
 import { TransactionRequest, TransactionResponse } from './providers/abstract-provider';
-import { BigNumber } from './utils';
 
 export abstract class Signer {
     readonly provider?: Provider;
 
-    protected nonce: BigNumber;
+    protected nonce: number;
 
     abstract getAddress(): Promise<string>
     abstract getHexAddress(): Promise<string>
@@ -24,7 +23,7 @@ export abstract class Signer {
     abstract sign(transaction: TransactionRequest, overrides?: any): Promise<string>;
     abstract sendTransaction(transaction: TransactionRequest, overrides?: any): Promise<TransactionResponse>;
 
-    abstract getNonce(): BigNumber;
+    abstract getNonce(): number;
     abstract clearNonce(): void;
 
     constructor() {
@@ -39,4 +38,3 @@ export abstract class Signer {
 }
 
 //defineReadOnly(Signer, 'inherits', inheritable(Signer));
-

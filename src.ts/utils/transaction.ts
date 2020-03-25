@@ -69,7 +69,7 @@ export interface Transaction {
 export interface TransactionLog {
     success: boolean,
     info: {
-        nonce: BigNumberish,
+        nonce: number,
         hash: string,
         message?: string
     }

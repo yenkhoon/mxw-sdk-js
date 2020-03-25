@@ -8,20 +8,24 @@ import { defineReadOnly, resolveProperties, checkProperties } from './utils/prop
 import { populateTransaction, parse as parseTransaction } from './utils/transaction';
 
 import { checkFormat, checkString, checkNumber, checkAny, checkBigNumber } from './utils/misc';
-import { BigNumberish, Arrayish, getMultiSigAddress, BigNumber } from './utils';
+import { BigNumberish, Arrayish, getMultiSigAddress } from './utils';
 
 export interface MultiSigWalletProperties {
     owner: string,
-    threshold: Number,
+    threshold: number,
     signers: string[],
 }
 
 export interface UpdateMultiSigWalletProperties {
     owner: string,
     groupAddress: string,
-    threshold: BigNumber,
+    threshold: number,
     signers: any,
 }
+
+
+//TODO:: should extends from AbstractSigner, same as Wallet
+// export class MultiSigWallet extends AbstractSigner { ... }
 
 export class MultiSigWallet extends Signer {
 
@@ -30,7 +34,7 @@ export class MultiSigWallet extends Signer {
     readonly signer: Signer;
 
     private _multisigAccountState: AccountState;
-    private accountNumber: BigNumber;
+    private accountNumber: number;
 
 
 
@@ -38,7 +42,7 @@ export class MultiSigWallet extends Signer {
         super();
         errors.checkNew(this, MultiSigWallet);
         if (!groupAddress) {
-            errors.throwError('group address is required', errors.MISSING_ARGUMENT, { arg: 'group address' });
+            errors.throwError('group address is required', errors.MISSING_ARGUMENT, { args: [groupAddress] });
         }
         defineReadOnly(this, 'groupAddress', groupAddress);
 
@@ -49,7 +53,7 @@ export class MultiSigWallet extends Signer {
             defineReadOnly(this, 'provider', signerOrProvider);
             defineReadOnly(this, 'signer', null);
         } else {
-            errors.throwError('invalid signer or provider', errors.INVALID_ARGUMENT, { arg: 'signerOrProvider', value: signerOrProvider });
+            errors.throwError('invalid signer or provider', errors.INVALID_ARGUMENT, { args: [groupAddress, signerOrProvider], value: signerOrProvider });
         }
     }
 
@@ -61,7 +65,7 @@ export class MultiSigWallet extends Signer {
 
     get isUsable() {
         if (!this.groupAddress) {
-            errors.throwError('not initialized', errors.NOT_INITIALIZED, { arg: 'groupAddress' });
+            errors.throwError('not initialized', errors.NOT_INITIALIZED, { args: [this.groupAddress] });
         }
         return true;
     }
@@ -88,24 +92,25 @@ export class MultiSigWallet extends Signer {
 
     public sign(transaction: TransactionRequest, overrides?: any) {
         if (!this.signer) {
-            errors.throwError('sign multisig transaction require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
+            errors.throwError('sign multisig transaction require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
         return this.signer.sign(transaction, overrides);
     }
 
     private signInternalTransaction(transaction: TransactionRequest, overrides?: any) {
         if (!this.signer) {
-            errors.throwError('sign multisig transaction require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
+            errors.throwError('sign multisig transaction require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
 
         if (!this._multisigAccountState) {
-            errors.throwError('multisig account state not found', errors.NOT_INITIALIZED, { arg: 'multisigAccountState' })
+            errors.throwError('multisig account state not found', errors.NOT_INITIALIZED, { args: [this.multisigAccountState] })
         }
         overrides = {
             ...overrides,
             accountNumber: this.multisigAccountState.value.accountNumber,
             nonce: this.multisigAccountState.value.multisig.counter
         }
+
         return this.signer.sign(transaction, overrides).then((signedTransaction) => {
             // Decode base64 signed transaction
             return parseTransaction(signedTransaction);
@@ -114,13 +119,13 @@ export class MultiSigWallet extends Signer {
 
     public sendTransaction(transaction: TransactionRequest, overrides?: any) {
         if (!this.signer) {
-            errors.throwError('create multisig transaction require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
+            errors.throwError('create multisig transaction require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
         return resolveProperties({ signerAddress: this.signer.getAddress() }).then(({ signerAddress }) => {
             return populateTransaction(transaction, this.provider, this.signer.getAddress()).then((internalTransaction) => {
                 return this.signInternalTransaction(internalTransaction, overrides).then((signedInternalTransaction) => {
                     if (!signerAddress) {
-                        return errors.throwError('create multisig transaction', errors.MISSING_ARGUMENT, { arg: 'signerAddress' });
+                        return errors.throwError('create multisig transaction', errors.MISSING_ARGUMENT, { args: [signerAddress] });
                     }
                     return this.provider.resolveName(this.groupAddress).then((groupAddress) => {
                         if (signedInternalTransaction.hash) {
@@ -142,16 +147,16 @@ export class MultiSigWallet extends Signer {
 
     public sendConfirmTransaction(transactionId: BigNumberish, overrides?: any) {
         if (!this.signer) {
-            errors.throwError('confirm multisig transaction require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
+            errors.throwError('confirm multisig transaction require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
         return resolveProperties({ signerAddress: this.signer.getAddress() }).then(({ signerAddress }) => {
             if (!signerAddress) {
-                return errors.throwError('confirm multisig transaction failed', errors.MISSING_ARGUMENT, { arg: 'signerAddress' });
+                return errors.throwError('confirm multisig transaction failed', errors.MISSING_ARGUMENT, { args: [signerAddress] });
             }
             return this.provider.resolveName(this.groupAddress).then((groupAddress) => {
                 return this.getPendingTx(transactionId.toString(), null, overrides).then((pendingTx) => {
                     if (!pendingTx) {
-                        return errors.throwError('confirm multisig transaction failed, pending tx not found', errors.MISSING_ARGUMENT, { arg: 'transactionId' });
+                        return errors.throwError('confirm multisig transaction failed, pending tx not found', errors.MISSING_ARGUMENT, { args: [transactionId] });
                     }
                     return pendingTx;
                 }).then((pendingTx) => {
@@ -189,9 +194,10 @@ export class MultiSigWallet extends Signer {
     }
 
     private sendRawTransaction(transaction: TransactionRequest, overrides?: any) {
-        if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { argument: 'provider' }); }
+        if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { args: [this.provider] }); }
 
         return populateTransaction(transaction, this.provider, this.signer.getAddress()).then((tx) => {
+            // TODO: override should not be used for transaction properties. It's a bad practice.
             // Removing multisig signature elements, so that it will be using wallet signature instead of multisig.
             if (overrides && overrides["accountNumber"]) {
                 delete overrides["accountNumber"];
@@ -199,6 +205,7 @@ export class MultiSigWallet extends Signer {
             if (overrides && overrides["nonce"]) {
                 delete overrides["nonce"];
             }
+
             return this.sign(tx, overrides).then((signedTransaction) => {
                 return this.provider.sendTransaction(signedTransaction, overrides).catch(error => {
                     // Clear the cached nonce when failure happened to prevent it out of sequence
@@ -217,7 +224,7 @@ export class MultiSigWallet extends Signer {
     */
     static create(properties: MultiSigWalletProperties, signer: Signer, overrides?: any): Promise<TransactionResponse | MultiSigWallet> {
         if (!Signer.isSigner(signer)) {
-            errors.throwError('create multisig wallet transaction require signer', errors.MISSING_ARGUMENT, { arg: 'signer' });
+            errors.throwError('create multisig wallet transaction require signer', errors.MISSING_ARGUMENT, { args: [signer] });
         }
         if (properties && 'string' === typeof (properties)) {
             properties = JSON.parse(properties);
@@ -231,7 +238,7 @@ export class MultiSigWallet extends Signer {
 
         return resolveProperties({ signerAddress: signer.getAddress() }).then(({ signerAddress }) => {
             if (!signerAddress) {
-                errors.throwError('create multisig wallet require signer address', errors.MISSING_ARGUMENT, { required: 'signer' });
+                errors.throwError('create multisig wallet require signer address', errors.MISSING_ARGUMENT, { required: signerAddress });
             }
             properties.owner = signerAddress; // Set signer address as owner
 
@@ -250,11 +257,9 @@ export class MultiSigWallet extends Signer {
 
             return signer.sendTransaction(transaction, overrides).then((response) => {
 
-                console.log(signerAddress, "   nonce: ", signer.getNonce())
-                let groupAddress = getMultiSigAddress(signerAddress, signer.getNonce())
-
-                console.log("groupAddress:", groupAddress);
-                //console.log("getAddress:", (groupAddress));
+                // We should consider that the signer signed this message,
+                // so the nonce for calculating groupAddress will be signed_nonce+1
+                let groupAddress = getMultiSigAddress(signerAddress, signer.getNonce()+1)
 
                 if (overrides && overrides.sendOnly) {
                     return response;
@@ -282,7 +287,7 @@ export class MultiSigWallet extends Signer {
      */
     static update(properties: UpdateMultiSigWalletProperties, signer: Signer, overrides?: any): Promise<TransactionResponse | TransactionReceipt> {
         if (!Signer.isSigner(signer)) {
-            errors.throwError('update multisig wallet transaction require signer', errors.MISSING_ARGUMENT, { arg: 'signer' });
+            errors.throwError('update multisig wallet transaction require signer', errors.MISSING_ARGUMENT, { args: [signer] });
         }
         if (properties && 'string' === typeof (properties)) {
             properties = JSON.parse(properties);
@@ -297,7 +302,7 @@ export class MultiSigWallet extends Signer {
 
         return resolveProperties({ address: signer.getAddress() }).then(({ address }) => {
             if (!address) {
-                errors.throwError('update multisig wallet require signer address', errors.MISSING_ARGUMENT, { required: 'signer' });
+                errors.throwError('update multisig wallet require signer address', errors.MISSING_ARGUMENT, { required: signer });
             }
             properties.owner = address; // Set signer address as owner
 
@@ -354,25 +359,24 @@ export class MultiSigWallet extends Signer {
      */
     public getPendingTx(txID: string, blockTag?: BlockTag, overrides?: any) {
         if (!this.signer) {
-            errors.throwError('query multisig pending tx require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
+            errors.throwError('query multisig pending tx require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
-        //return resolveProperties({ signerAddress: this.groupAddress }).then(({ groupAddress }) => {
+
         if (!this.groupAddress) {
-            errors.throwError('query multisig pending tx group address', errors.MISSING_ARGUMENT, { arg: 'groupAddress' });
+            errors.throwError('query multisig pending tx group address', errors.MISSING_ARGUMENT, { args: [this.groupAddress] });
         }
 
         return this.provider.getMultiSigPendingTx(this.groupAddress, txID, blockTag).then((result) => {
             return result;
         });
-        //});
     }
 
     public refresh(overrides?: any) {
         if (!this.groupAddress) {
-            errors.throwError('not initialized', errors.NOT_INITIALIZED, { arg: 'symbol' });
+            errors.throwError('not initialized', errors.NOT_INITIALIZED, { args: [this.groupAddress] });
         }
         if (!this.provider) {
-            errors.throwError('not initialized', errors.NOT_INITIALIZED, { arg: 'itemID' });
+            errors.throwError('not initialized', errors.NOT_INITIALIZED, { args: [this.provider] });
         }
 
         return this.getState(null, { ...overrides, queryOnly: true }).then((state) => {
@@ -383,15 +387,15 @@ export class MultiSigWallet extends Signer {
 
     public getState(blockTag?: BlockTag, overrides?: any) {
         if (!this.groupAddress) {
-            errors.throwError('not initialized', errors.NOT_INITIALIZED, { arg: 'symbol' });
+            errors.throwError('not initialized', errors.NOT_INITIALIZED, { args: [this.groupAddress] });
         }
         if (!this.provider) {
-            errors.throwError('not initialized', errors.NOT_INITIALIZED, { arg: 'itemID' });
+            errors.throwError('not initialized', errors.NOT_INITIALIZED, { args: [this.provider] });
         }
 
         return this.provider.getAccountState(this.groupAddress, blockTag).then((result) => {
             if (!result) {
-                errors.throwError('Group account state is not available', errors.NOT_AVAILABLE, { arg: 'groupAddress' });
+                errors.throwError('Group account state is not available', errors.NOT_AVAILABLE, { args: [this.groupAddress] });
             }
             if (this.groupAddress != result.value.address) {
                 errors.throwError('Group account address mismatch', errors.UNEXPECTED_RESULT, { expected: this.groupAddress, returned: result });
@@ -404,13 +408,13 @@ export class MultiSigWallet extends Signer {
     }
 
     public getBalance(blockTag?: BlockTag) {
-        if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { argument: 'provider' }); }
+        if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { args: [this.provider] }); }
         return this.provider.getBalance(this.groupAddress, blockTag);
     }
 
 
     public getAccountNumber(blockTag?: BlockTag) {
-        if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { argument: 'provider' }); }
+        if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { args: [this.provider] }); }
 
         if (!this.accountNumber) {
             return this.provider.getAccountNumber(this.address, blockTag).then((accountNumber) => {
@@ -424,14 +428,14 @@ export class MultiSigWallet extends Signer {
 
     public getNonce() {
         if (!this.signer) {
-            errors.throwError('get nonce require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
+            errors.throwError('get nonce require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
         return this.signer.getNonce();
     }
 
     public clearNonce() {
         if (!this.signer) {
-            errors.throwError('clear nonce require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
+            errors.throwError('clear nonce require signer', errors.NOT_INITIALIZED, { args: [this.signer] });
         }
         this.signer.clearNonce();
     }

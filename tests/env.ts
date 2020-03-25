@@ -1,6 +1,7 @@
 'use strict';
 
 interface Node {
+
     connection: {
         url: string,
         timeout: number
@@ -23,29 +24,42 @@ interface Node {
         middleware: string,
         feeCollector: string
     },
+
     fungibleToken: {
         provider: string,
         issuer: string,
         middleware: string,
         feeCollector: string,
     },
+
     nonFungibleToken: {
         provider: string,
         issuer: string,
         middleware: string,
         feeCollector: string,
-    }
+    },
+    multisig: {
+        multisig_acc1: string,
+        multisig_acc2: string,
+        multisig_acc3: string,
+        multisig_acc4: string,
+    },
 };
 
+
+
 const localnet: Node = {
+
     connection: {
-        url: "http://127.0.0.1:26657",
+        url: "http://localhost:26657",
         timeout: 60000
     },
+
     trace: {
         silent: true,
         silentRpc: true
     },
+
     chainId: "maxonrow-chain",
     name: "mxw",
     airDrop: "gold damp garlic turn host harbor else bird wrestle quarter surround parrot fan naive burst effort impact hen aware step gym ribbon inform cost",
@@ -71,11 +85,18 @@ const localnet: Node = {
         issuer: "appear scale write grow tiger puppy trick kite exhibit distance target cliff coin silly because train matrix weather list chat stamp warfare hobby ocean",
         middleware: "guard loop tell accuse village list prevent sea dolphin weapon own track spike venue gun blind carry hawk weapon track rain amazing author eagle",
         feeCollector: "mxw1md4u2zxz2ne5vsf9t4uun7q2k0nc3ly5g22dne",
-    }
+    },
+    multisig: {
+        multisig_acc1: "since height latin shiver gallery cage sure face twelve already leisure shop super garden maid else summer search half robot bicycle game life disease",
+        multisig_acc2: "youth grief wagon trim fix next hammer differ minimum grit stuff actress swap episode outdoor trophy seat hero floor word wink comfort outer nasty",
+        multisig_acc3: "shove when pass black expose blouse dial glue original wonder move glad rice guide trophy dish beach legal animal kitchen maze concert ahead keep",
+        multisig_acc4: "invite wrong moment tribe disease sock reflect fold vacuum say forward dutch lottery hotel boss parade salad announce dismiss scrap december dog when seven",
+    },
 };
 
 const nodes: { [name: string]: Node } = { localnet };
 const nodeProvider: Node = localnet;
+
 
 export {
     nodeProvider, nodes, localnet,

@@ -127,6 +127,17 @@ export class JsonRpcProvider extends BaseProvider {
                     throw this.checkResponseLog(method, result, null, undefined, { method, params });
                 });
 
+            case 'sendTransactionCommit':
+                return this.send('encode_and_broadcast_tx_commit', [params.signedTransaction]).then((result) => {
+                    if (0 == result.deliver_tx.code) {
+                        if (result.hash) {
+                            result.hash = "0x" + result.hash;
+                            return result;
+                        }
+                    }
+                    throw this.checkResponseLog(method, result, null, undefined, { method, params });
+                });
+
             case 'getTransaction':
             case 'getTransactionReceipt':
                 return this.send('decoded_tx', [base64Encode(params.transactionHash), null]).then((result) => {

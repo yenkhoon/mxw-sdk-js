@@ -17,7 +17,7 @@ describe('Suite: Provider', function () {
 
     if (silent) { silent = nodeProvider.trace.silent; }
     if (silentRpc) { silentRpc = nodeProvider.trace.silentRpc; }
-    
+
     provider = new mxw.providers.JsonRpcProvider(nodeProvider.connection, nodeProvider).on("rpc", function (args) {
         if (!silentRpc) {
             if ("response" == args.action) {
@@ -105,7 +105,7 @@ describe('Suite: Provider', function () {
         return provider.getAccountNumber("mxw18nyjc5sxz0tlndf8uslyj6k9leha59vc23djl6").then((accountNumber) => {
             expect(accountNumber).to.exist;
             expect(accountNumber.toString()).to.equal("0");
-            if (!silent) console.log(indent, "AccountNumber:", accountNumber.toString());
+            if (!silent) console.log(indent, "AccountNumber:", accountNumber);
         });
     });
 

@@ -833,13 +833,13 @@ export class BaseProvider extends Provider {
     }
 
 
-    getAccountNumber(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
+    getAccountNumber(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number> {
         return this.ready.then(() => {
             return this.getAccountState(addressOrName, blockTag).then((result) => {
                 if (result && result.value && result.value.accountNumber) {
-                    return bigNumberify(result.value.accountNumber);
+                    return result.value.accountNumber;
                 }
-                return bigNumberify(0);
+                return 0;
             });
         });
     }
@@ -860,13 +860,13 @@ export class BaseProvider extends Provider {
         });
     }
 
-    getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
+    getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<number> {
         return this.ready.then(() => {
             return this.getAccountState(addressOrName, blockTag).then((result) => {
                 if (result && result.value && result.value.sequence) {
-                    return bigNumberify(result.value.sequence);
+                    return +result.value.sequence;
                 }
-                return bigNumberify(0);
+                return -1;
             });
         });
     }
@@ -876,7 +876,9 @@ export class BaseProvider extends Provider {
             return resolveProperties({ signedTransaction: signedTransaction }).then(({ signedTransaction }) => {
                 let params = { signedTransaction };
                 let async = overrides && overrides.async ? true : false;
-                return this.perform(async ? 'sendTransactionAsync' : 'sendTransaction', params).then((result) => {
+                let commit = overrides && overrides.commit ? true : false;
+
+                return this.perform(commit ? 'sendTransactionCommit' : (async ? 'sendTransactionAsync' : 'sendTransaction'), params).then((result) => {
                     return this._wrapTransaction(parseTransaction(signedTransaction), result.hash, result.blockNumber);
                 }, function (error) {
                     error.transaction = parseTransaction(signedTransaction);
