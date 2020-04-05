@@ -139,9 +139,22 @@ export class Wallet extends AbstractSigner {
         }
         return resolveProperties(transaction).then((tx) => {
             console.log("txtxtxtxxtxtxtxtxtxtx" + JSON.stringify(tx));
-            if (!tx.nonce || !tx.accountNumber || !tx.value || !tx.value.msg || !Array.isArray(tx.value.msg)) {
+            if (!tx.nonce) {
                 errors.throwError('missing transaction field', errors.MISSING_ARGUMENT, { argument: 'value', value: tx });
             }
+            if (!tx.accountNumber) {
+                errors.throwError('missing transaction field', errors.MISSING_ARGUMENT, { argument: 'value', value: tx });
+            }
+            if (!tx.value) {
+                errors.throwError('missing transaction field', errors.MISSING_ARGUMENT, { argument: 'value', value: tx });
+            }
+            if (!tx.value.msg) {
+                errors.throwError('missing transaction field', errors.MISSING_ARGUMENT, { argument: 'value', value: tx });
+            }
+            if (!Array.isArray(tx.value.msg)) {
+                errors.throwError('missing transaction field', errors.MISSING_ARGUMENT, { argument: 'value', value: tx });
+            }
+
             if (!Array.isArray(tx.value.msg)) {
                 errors.throwError('invalid transaction field', errors.MISSING_ARGUMENT, { argument: 'value', value: tx });
             }
