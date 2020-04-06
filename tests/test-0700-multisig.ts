@@ -2,13 +2,13 @@
 
 import { describe, it } from 'mocha';
 import { expect } from 'chai';
-import { mxw, MultiSig} from '../src.ts/index';
+import { mxw, MultiSig } from '../src.ts/index';
 import { nodeProvider } from "./env";
 import { bigNumberify } from '../src.ts/utils';
 import { smallestUnitName } from '../src.ts/utils/units';
 
 let indent = "     ";
-let silent = false;
+let silent = true;
 let silentRpc = true;
 let slowThreshold = 9000;
 
@@ -75,12 +75,10 @@ describe('Suite: MultiSignature Wallet', function () {
 });
 
 
-
 describe('Suite: MultiSig - Create ', function () {
     this.slow(slowThreshold); // define the threshold for slow indicator
-
     it("Create", function () {
-        let signers = [issuer.address, provider.address];
+        let signers = [wallet.address, issuer.address, middleware.address];
 
         multiSigWalletProperties = {
             owner: wallet.address,
@@ -90,8 +88,8 @@ describe('Suite: MultiSig - Create ', function () {
 
         return MultiSig.MultiSigWallet.create(multiSigWalletProperties, wallet, defaultOverrides).then((multiSigWalletRes) => {
             expect(multiSigWalletRes).to.exist;
+            console.log(multiSigWalletRes);
             multiSigWallet = multiSigWalletRes as MultiSig.MultiSigWallet;
-            if (!silent) console.log(indent, "groupAddress: ", multiSigWallet.groupAddress);
         });
     });
 
@@ -102,14 +100,13 @@ describe('Suite: MultiSig - Create ', function () {
         });
     });
 
-
     it("Multisig account Update", function () {
 
-        let signers = [issuer.address, provider.address, wallet.address];
+        let signers = [wallet.address, issuer.address, middleware.address];
         updateMultiSigWalletProperties = {
             owner: wallet.address,
             groupAddress: multiSigWallet.groupAddress.toString(),
-            threshold: bigNumberify(2),
+            threshold: bigNumberify(3),
             signers: signers,
         };
         return MultiSig.MultiSigWallet.update(updateMultiSigWalletProperties, wallet).then((txReceipt) => {
@@ -118,8 +115,9 @@ describe('Suite: MultiSig - Create ', function () {
 
     });
 
+
     it("Transfer to group account", function () {
-        let value = mxw.utils.parseMxw("122");
+        let value = mxw.utils.parseMxw("100");
         let overrides = {
             logSignaturePayload: defaultOverrides.logSignaturePayload,
             logSignedTransaction: defaultOverrides.logSignedTransaction,
@@ -139,70 +137,7 @@ describe('Suite: MultiSig - Create ', function () {
         });
     });
 
-    it("Top-up provider-account", function () {
-        let value = mxw.utils.parseMxw("100");
-        let overrides = {
-            logSignaturePayload: defaultOverrides.logSignaturePayload,
-            logSignedTransaction: defaultOverrides.logSignedTransaction,
-            memo: "Hello Blockchain!"
-        }
-        return wallet.provider.getTransactionFee("bank", "bank-send", {
-            from: wallet.address,
-            to: provider.address,
-            value,
-            memo: overrides.memo
-        }).then((fee) => {
-            overrides["fee"] = fee;
-            return wallet.transfer(provider.address, value, overrides).then((receipt) => {
-                expect(receipt).to.exist;
-                if (!silent) console.log(indent, "Top-up.receipt:", JSON.stringify(receipt));
-            });
-        });
-    });
-
-    it("Top-up issuer-account", function () {
-        let value = mxw.utils.parseMxw("100");
-        let overrides = {
-            logSignaturePayload: defaultOverrides.logSignaturePayload,
-            logSignedTransaction: defaultOverrides.logSignedTransaction,
-            memo: "Hello Blockchain!"
-        }
-        return wallet.provider.getTransactionFee("bank", "bank-send", {
-            from: wallet.address,
-            to: issuer.address,
-            value,
-            memo: overrides.memo
-        }).then((fee) => {
-            overrides["fee"] = fee;
-            return wallet.transfer(issuer.address, value, overrides).then((receipt) => {
-                expect(receipt).to.exist;
-                if (!silent) console.log(indent, "Top-up.receipt:", JSON.stringify(receipt));
-            });
-        });
-    });
-
-    it("Top-up middleware-account", function () {
-        let value = mxw.utils.parseMxw("100");
-        let overrides = {
-            logSignaturePayload: defaultOverrides.logSignaturePayload,
-            logSignedTransaction: defaultOverrides.logSignedTransaction,
-            memo: "Hello Blockchain!"
-        }
-        return wallet.provider.getTransactionFee("bank", "bank-send", {
-            from: wallet.address,
-            to: middleware.address,
-            value,
-            memo: overrides.memo
-        }).then((fee) => {
-            overrides["fee"] = fee;
-            return wallet.transfer(middleware.address, value, overrides).then((receipt) => {
-                expect(receipt).to.exist;
-                if (!silent) console.log(indent, "Top-up.receipt:", JSON.stringify(receipt));
-            });
-        });
-    });
-
-    it("Create Multisig Tx", function () {
+    it("Multisig create Transfer", function () {
         let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
             from: multiSigWallet.groupAddress,
             to: wallet.address,
@@ -210,56 +145,19 @@ describe('Suite: MultiSig - Create ', function () {
             memo: "pipipapipu",
             denom: smallestUnitName
         });
-
-        let overrides = {
-            accountNumber: multiSigWallet.multisigAccountState.value.accountNumber,
-            nonce: 0           
-        }
-
         return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
             transaction["fee"] = fee;
-            return multiSigWallet.sendTransaction(transaction, issuer, overrides).then((txReceipt) => {
+            return multiSigWallet.sendTransaction(transaction).then((txReceipt) => {
                 expect(txReceipt).to.exist;
-                if (!silent) console.log(indent, "Create-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
+                let anotherSigner = new MultiSig.MultiSigWallet(multiSigWallet.groupAddress, issuer)
+                anotherSigner.refresh();
+                return anotherSigner.sendConfirmTransaction(0).then((respond) => {
+                    expect(respond).to.exist;
+                });
             });
         });
     });
 
-    it("Sign multiSig Transaction", function () {
-        let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
-            from: multiSigWallet.groupAddress,
-            to: wallet.address,
-            value: mxw.utils.parseMxw("1"),
-            memo: "pipipapipu",
-            denom: smallestUnitName
-        });
-
-        let overrides = {
-            accountNumber: multiSigWallet.multisigAccountState.value.accountNumber,
-            nonce: 0           
-        }
-
-        return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
-            transaction["fee"] = fee;
-            return multiSigWallet.sendConfirmTransaction(0, provider, overrides).then((txReceipt) => {
-              expect(txReceipt).to.exist;
-                if (!silent) console.log(indent, "Sign-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
-            });
-        });
-    });
 
 });
-
-
-//test-OK
-describe('Suite: MultiSig - Clean up', function () {
-    this.slow(slowThreshold); // define the threshold for slow indicator
-    if (!silent) console.log(indent, "Clean up !!!");
-
-    it("Clean up", function () {
-        providerConnection.removeAllListeners();
-    });
-});
-
-
 
