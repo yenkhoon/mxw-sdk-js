@@ -8,7 +8,7 @@ import { bigNumberify } from '../src.ts/utils';
 import { smallestUnitName } from '../src.ts/utils/units';
 
 let indent = "     ";
-let silent = true;
+let silent = false;
 let silentRpc = true;
 let slowThreshold = 9000;
 
@@ -106,7 +106,7 @@ describe('Suite: MultiSig - Create ', function () {
         updateMultiSigWalletProperties = {
             owner: wallet.address,
             groupAddress: multiSigWallet.groupAddress.toString(),
-            threshold: bigNumberify(3),
+            threshold: bigNumberify(2),
             signers: signers,
         };
         return MultiSig.MultiSigWallet.update(updateMultiSigWalletProperties, wallet).then((txReceipt) => {
