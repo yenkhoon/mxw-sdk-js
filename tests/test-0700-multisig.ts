@@ -82,6 +82,562 @@ describe('Suite: MultiSignature Wallet', function () {
 });
 
 
+///============================= start : MULTIPLE signers =============================
+describe('Suite: MultiSig - Case 1. Invalid Cases with TWO signers', function () {
+    this.slow(slowThreshold); // define the threshold for slow indicator
+    it("Create", function () {
+        let signers = [wallet.address, issuer.address];
+
+        multiSigWalletProperties = {
+            owner: wallet.address,
+            threshold: 2,
+            signers: signers,
+        };
+
+        return MultiSig.MultiSigWallet.create(multiSigWalletProperties, wallet, defaultOverrides).then((multiSigWalletRes) => {
+            expect(multiSigWalletRes).to.exist;
+            if (!silent) console.log(multiSigWalletRes);
+            multiSigWallet = multiSigWalletRes as MultiSig.MultiSigWallet;
+        });
+    });
+
+    it("Query", function () {
+        return MultiSig.MultiSigWallet.fromGroupAddress(multiSigWallet.groupAddress, wallet).then((res) => {
+            if (!silent) console.log(indent, "Created MultiSigWallet:", JSON.stringify(res.multisigAccountState));
+            multiSigWallet = res
+        });
+    });
+
+    it("Multisig account Update", function () {
+
+        let signers = [wallet.address, issuer.address];
+        updateMultiSigWalletProperties = {
+            owner: wallet.address,
+            groupAddress: multiSigWallet.groupAddress.toString(),
+            threshold: bigNumberify(2),
+            signers: signers,
+        };
+        return MultiSig.MultiSigWallet.update(updateMultiSigWalletProperties, wallet).then((txReceipt) => {
+            expect(txReceipt).to.exist;
+        });
+
+    });
+
+    it("Top-up group account", function () {
+        let value = mxw.utils.parseMxw("89");
+        let overrides = {
+            logSignaturePayload: defaultOverrides.logSignaturePayload,
+            logSignedTransaction: defaultOverrides.logSignedTransaction,
+            memo: "Hello Blockchain!"
+        }
+        return wallet.provider.getTransactionFee("bank", "bank-send", {
+            from: wallet.address,
+            to: multiSigWallet.groupAddress,
+            value,
+            memo: overrides.memo
+        }).then((fee) => {
+            overrides["fee"] = fee;
+            return wallet.transfer(multiSigWallet.groupAddress, value, overrides).then((receipt) => {
+                expect(receipt).to.exist;
+                if (!silent) console.log(indent, "transfer.receipt:", JSON.stringify(receipt));
+            });
+        });
+    });
+
+    it("Group-address for Get balance", function () {
+        return multiSigWallet.getBalance().then((balance) => {
+            expect(balance).to.exist;
+            if (!silent) console.log(indent, "Group-address Balance:", formatMxw(balance), "(" + multiSigWallet.groupAddress + ")");
+        });
+    });
+
+    it("Create Multisig Tx, using TWO signers", function () {
+        if (!silent) console.log(indent, "\nstart: ==================Create Multisig Tx, using TWO signers\n");
+
+        let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
+            from: multiSigWallet.groupAddress,
+            to: wallet.address,
+            value: mxw.utils.parseMxw("1"),
+            memo: "pipipapipu",
+            denom: smallestUnitName
+        });
+
+        return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
+            transaction["fee"] = fee;
+            return multiSigWallet.sendTransaction(transaction).then((txReceipt) => {
+              expect(txReceipt).to.exist;
+                if (!silent) console.log(indent, "Create-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
+                if (!silent) console.log(indent, "\nend: ==================Create Multisig Tx, using TWO signers\n");
+            });
+
+        });
+
+    });
+
+    it("Sign multiSig Transaction by 2nd-signer, Error due to : Insufficient balance to do transaction by sender-issuer", function () {
+       if (!silent) console.log(indent, "\nstart: ==================Sign multiSig Transaction by 2nd-signer, Error due to : Insufficient balance to do transaction by sender-issuer_nft\n");
+
+       let anotherSigner = new MultiSig.MultiSigWallet(multiSigWallet.groupAddress, issuer)
+       anotherSigner.refresh();
+       return anotherSigner.sendConfirmTransaction(0, multiSigWallet.multisigAccountState.value.accountNumber).then((respond) => {
+           expect(respond).to.exist;
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.receipt: ", JSON.stringify(respond));
+       }).catch(error => {
+           if (!silent) console.log(indent, "error.code: ", error.code);
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.Error: ", JSON.stringify(error));
+           if (!silent) console.log(indent, "\nend: ==================Sign multiSig Transaction by 2nd-signer, Error due to : Insufficient balance to do transaction by sender-issuer_nft\n");
+       });
+
+    });
+
+});
+
+
+describe('Suite: MultiSig - Case 2. Valid Case with TWO signers', function () {
+    this.slow(slowThreshold); // define the threshold for slow indicator
+    it("Create", function () {
+        let signers = [wallet.address, issuer.address];
+
+        multiSigWalletProperties = {
+            owner: wallet.address,
+            threshold: 2,
+            signers: signers,
+        };
+
+        return MultiSig.MultiSigWallet.create(multiSigWalletProperties, wallet, defaultOverrides).then((multiSigWalletRes) => {
+            expect(multiSigWalletRes).to.exist;
+            if (!silent) console.log(multiSigWalletRes);
+            multiSigWallet = multiSigWalletRes as MultiSig.MultiSigWallet;
+        });
+    });
+
+    it("Query", function () {
+        return MultiSig.MultiSigWallet.fromGroupAddress(multiSigWallet.groupAddress, wallet).then((res) => {
+            if (!silent) console.log(indent, "Created MultiSigWallet:", JSON.stringify(res.multisigAccountState));
+            multiSigWallet = res
+        });
+    });
+
+    it("Multisig account Update", function () {
+
+        let signers = [wallet.address, issuer.address];
+        updateMultiSigWalletProperties = {
+            owner: wallet.address,
+            groupAddress: multiSigWallet.groupAddress.toString(),
+            threshold: bigNumberify(2),
+            signers: signers,
+        };
+        return MultiSig.MultiSigWallet.update(updateMultiSigWalletProperties, wallet).then((txReceipt) => {
+            expect(txReceipt).to.exist;
+        });
+
+    });
+
+    it("Top-up group account", function () {
+        let value = mxw.utils.parseMxw("89");
+        let overrides = {
+            logSignaturePayload: defaultOverrides.logSignaturePayload,
+            logSignedTransaction: defaultOverrides.logSignedTransaction,
+            memo: "Hello Blockchain!"
+        }
+        return wallet.provider.getTransactionFee("bank", "bank-send", {
+            from: wallet.address,
+            to: multiSigWallet.groupAddress,
+            value,
+            memo: overrides.memo
+        }).then((fee) => {
+            overrides["fee"] = fee;
+            return wallet.transfer(multiSigWallet.groupAddress, value, overrides).then((receipt) => {
+                expect(receipt).to.exist;
+                if (!silent) console.log(indent, "transfer.receipt:", JSON.stringify(receipt));
+            });
+        });
+    });
+
+    it("Group-address for Get balance", function () {
+        return multiSigWallet.getBalance().then((balance) => {
+            expect(balance).to.exist;
+            if (!silent) console.log(indent, "Group-address Balance:", formatMxw(balance), "(" + multiSigWallet.groupAddress + ")");
+        });
+    });
+
+    it("Top-up issuer-account", function () {
+        let value = mxw.utils.parseMxw("167");
+        let overrides = {
+            logSignaturePayload: defaultOverrides.logSignaturePayload,
+            logSignedTransaction: defaultOverrides.logSignedTransaction,
+            memo: "Hello Blockchain!"
+        }
+        return wallet.provider.getTransactionFee("bank", "bank-send", {
+            from: wallet.address,
+            to: issuer.address,
+            value,
+            memo: overrides.memo,
+            denom: smallestUnitName
+        }).then((fee) => {
+            overrides["fee"] = fee;
+            return wallet.transfer(issuer.address, value, overrides).then((receipt) => {
+                expect(receipt).to.exist;
+                if (!silent) console.log(indent, "Top-up.receipt:", JSON.stringify(receipt));
+            });
+        });
+    });
+
+    it("Issuer-address for Get balance", function () {
+        return issuer.getBalance().then((balance) => {
+            expect(balance).to.exist;
+            if (!silent) console.log(indent, "issuer-address Balance:", formatMxw(balance), "(" + issuer.address + ")");
+        });
+    });
+
+    it("Create Multisig Tx, with Valid Signer", function () {
+        if (!silent) console.log(indent, "\nstart: ==================Create Multisig Tx, with Valid Signer\n");
+
+        let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
+            from: multiSigWallet.groupAddress,
+            to: wallet.address,
+            value: mxw.utils.parseMxw("1"),
+            memo: "pipipapipu",
+            denom: smallestUnitName
+        });
+
+        return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
+            transaction["fee"] = fee;
+            return multiSigWallet.sendTransaction(transaction).then((txReceipt) => {
+              expect(txReceipt).to.exist;
+                if (!silent) console.log(indent, "Create-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
+                if (!silent) console.log(indent, "\nend: ==================Create Multisig Tx, with Valid Signer\n");
+            });
+
+        });
+
+    });
+
+    it("Sign multiSig Transaction by 2nd signer - Issuer", function () {
+       if (!silent) console.log(indent, "\nstart: ==================Sign multiSig Transaction by 2nd signer - Issuer\n");
+
+       let anotherSigner = new MultiSig.MultiSigWallet(multiSigWallet.groupAddress, issuer)
+       anotherSigner.refresh();
+       return anotherSigner.sendConfirmTransaction(0, multiSigWallet.multisigAccountState.value.accountNumber).then((respond) => {
+           expect(respond).to.exist;
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.receipt: ", JSON.stringify(respond));
+           if (!silent) console.log(indent, "\nend: ==================Sign multiSig Transaction by 2nd signer - Issuer\n");
+       }).catch(error => {
+           if (!silent) console.log(indent, "error.code: ", error.code);
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.Error: ", JSON.stringify(error));
+           if (!silent) console.log(indent, "\nend: ==================Sign multiSig Transaction by 2nd signer - Issuer\n");
+       });
+
+    });
+
+});
+
+
+describe('Suite: MultiSig - Case 3. Invalid Case with TWO signers', function () {
+    this.slow(slowThreshold); // define the threshold for slow indicator
+    it("Create", function () {
+        let signers = [wallet.address, issuer.address];
+
+        multiSigWalletProperties = {
+            owner: wallet.address,
+            threshold: 2,
+            signers: signers,
+        };
+
+        return MultiSig.MultiSigWallet.create(multiSigWalletProperties, wallet, defaultOverrides).then((multiSigWalletRes) => {
+            expect(multiSigWalletRes).to.exist;
+            if (!silent) console.log(multiSigWalletRes);
+            multiSigWallet = multiSigWalletRes as MultiSig.MultiSigWallet;
+        });
+    });
+
+    it("Query", function () {
+        return MultiSig.MultiSigWallet.fromGroupAddress(multiSigWallet.groupAddress, wallet).then((res) => {
+            if (!silent) console.log(indent, "Created MultiSigWallet:", JSON.stringify(res.multisigAccountState));
+            multiSigWallet = res
+        });
+    });
+
+    it("Top-up group account", function () {
+        let value = mxw.utils.parseMxw("89");
+        let overrides = {
+            logSignaturePayload: defaultOverrides.logSignaturePayload,
+            logSignedTransaction: defaultOverrides.logSignedTransaction,
+            memo: "Hello Blockchain!"
+        }
+        return wallet.provider.getTransactionFee("bank", "bank-send", {
+            from: wallet.address,
+            to: multiSigWallet.groupAddress,
+            value,
+            memo: overrides.memo
+        }).then((fee) => {
+            overrides["fee"] = fee;
+            return wallet.transfer(multiSigWallet.groupAddress, value, overrides).then((receipt) => {
+                expect(receipt).to.exist;
+                if (!silent) console.log(indent, "transfer.receipt:", JSON.stringify(receipt));
+            });
+        });
+    });
+
+    it("Group-address for Get balance", function () {
+        return multiSigWallet.getBalance().then((balance) => {
+            expect(balance).to.exist;
+            if (!silent) console.log(indent, "Group-address Balance:", formatMxw(balance), "(" + multiSigWallet.groupAddress + ")");
+        });
+    });
+
+    it("Create Multisig Tx, Error due to : Invalid Group-address", function () {
+        if (!silent) console.log(indent, "\nstart: ==================Create Multisig Tx, Error due to : Invalid Group-address\n");
+
+        let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
+            from: wallet.address,
+            to: wallet.address,
+            value: mxw.utils.parseMxw("1"),
+            memo: "pipipapipu",
+            denom: smallestUnitName
+        });
+
+        return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
+            transaction["fee"] = fee;
+            return multiSigWallet.sendTransaction(transaction).then((txReceipt) => {
+              expect(txReceipt).to.exist;
+                if (!silent) console.log(indent, "Create-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
+            }).catch(error => {
+                if (!silent) console.log(indent, "error.code: ", error.code);
+                if (!silent) console.log(indent, "Create Multisig Tx.Error: ", JSON.stringify(error));
+                if (!silent) console.log(indent, "\nend: ==================Create Multisig Tx, Error due to : Invalid Group-address\n");
+            });
+     
+        });
+
+    });
+
+    it("Create Multisig Tx, with Valid Group-address", function () {
+        if (!silent) console.log(indent, "\nstart: ==================Create Multisig Tx, with Valid Group-address\n");
+
+        let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
+            from: multiSigWallet.groupAddress,
+            to: wallet.address,
+            value: mxw.utils.parseMxw("1"),
+            memo: "pipipapipu",
+            denom: smallestUnitName
+        });
+
+        return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
+            transaction["fee"] = fee;
+            return multiSigWallet.sendTransaction(transaction).then((txReceipt) => {
+              expect(txReceipt).to.exist;
+                if (!silent) console.log(indent, "Create-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
+                if (!silent) console.log(indent, "\nend: ==================Create Multisig Tx, with Valid Group-address\n");
+            });
+
+        });
+
+    });
+
+    it("Top-up middleware-account", function () {
+        let value = mxw.utils.parseMxw("155");
+        let overrides = {
+            logSignaturePayload: defaultOverrides.logSignaturePayload,
+            logSignedTransaction: defaultOverrides.logSignedTransaction,
+            memo: "Hello Blockchain!"
+        }
+        return wallet.provider.getTransactionFee("bank", "bank-send", {
+            from: wallet.address,
+            to: middleware.address,
+            value,
+            memo: overrides.memo,
+            denom: smallestUnitName
+        }).then((fee) => {
+            overrides["fee"] = fee;
+            return wallet.transfer(middleware.address, value, overrides).then((receipt) => {
+                expect(receipt).to.exist;
+                if (!silent) console.log(indent, "Top-up.receipt:", JSON.stringify(receipt));
+            });
+        });
+    });
+
+    it("middleware-address for Get balance", function () {
+        return middleware.getBalance().then((balance) => {
+            expect(balance).to.exist;
+            if (!silent) console.log(indent, "middleware-address Balance:", formatMxw(balance), "(" + middleware.address + ")");
+        });
+    });
+
+    it("Sign multiSig Transaction by 2nd signer, Error due to : Sender is not group account's signer, middleware", function () {
+       if (!silent) console.log(indent, "\nstart: ==================Sign multiSig Transaction by 2nd signer, Error due to : Invalid 2nd-Sender, middleware\n");
+
+       let anotherSigner = new MultiSig.MultiSigWallet(multiSigWallet.groupAddress, middleware)
+       anotherSigner.refresh();
+       return anotherSigner.sendConfirmTransaction(0, multiSigWallet.multisigAccountState.value.accountNumber).then((respond) => {
+           expect(respond).to.exist;
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.receipt: ", JSON.stringify(respond));
+       }).catch(error => {
+           if (!silent) console.log(indent, "error.code: ", error.code);
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.Error: ", JSON.stringify(error));
+           if (!silent) console.log(indent, "\nend: ==================Sign multiSig Transaction by 2nd signer, Error due to : Invalid 2nd-Sender, middleware\n");
+       });
+
+    });
+
+});
+
+describe('Suite: MultiSig - Case 4. Invalid Case base on Nonce, TxID', function () {
+    this.slow(slowThreshold); // define the threshold for slow indicator
+    it("Create", function () {
+        let signers = [wallet.address, middleware.address];
+
+        multiSigWalletProperties = {
+            owner: wallet.address,
+            threshold: 2,
+            signers: signers,
+        };
+
+        return MultiSig.MultiSigWallet.create(multiSigWalletProperties, wallet, defaultOverrides).then((multiSigWalletRes) => {
+            expect(multiSigWalletRes).to.exist;
+            if (!silent) console.log(multiSigWalletRes);
+            multiSigWallet = multiSigWalletRes as MultiSig.MultiSigWallet;
+        });
+    });
+
+    it("Query", function () {
+        return MultiSig.MultiSigWallet.fromGroupAddress(multiSigWallet.groupAddress, wallet).then((res) => {
+            if (!silent) console.log(indent, "Created MultiSigWallet:", JSON.stringify(res.multisigAccountState));
+            multiSigWallet = res
+        });
+    });
+
+    it("Top-up group account", function () {
+        let value = mxw.utils.parseMxw("89");
+        let overrides = {
+            logSignaturePayload: defaultOverrides.logSignaturePayload,
+            logSignedTransaction: defaultOverrides.logSignedTransaction,
+            memo: "Hello Blockchain!"
+        }
+        return wallet.provider.getTransactionFee("bank", "bank-send", {
+            from: wallet.address,
+            to: multiSigWallet.groupAddress,
+            value,
+            memo: overrides.memo
+        }).then((fee) => {
+            overrides["fee"] = fee;
+            return wallet.transfer(multiSigWallet.groupAddress, value, overrides).then((receipt) => {
+                expect(receipt).to.exist;
+                if (!silent) console.log(indent, "transfer.receipt:", JSON.stringify(receipt));
+            });
+        });
+    });
+
+    it("Group-address for Get balance", function () {
+        return multiSigWallet.getBalance().then((balance) => {
+            expect(balance).to.exist;
+            if (!silent) console.log(indent, "Group-address Balance:", formatMxw(balance), "(" + multiSigWallet.groupAddress + ")");
+        });
+    });
+
+    it("Top-up middleware-account", function () {
+        let value = mxw.utils.parseMxw("155");
+        let overrides = {
+            logSignaturePayload: defaultOverrides.logSignaturePayload,
+            logSignedTransaction: defaultOverrides.logSignedTransaction,
+            memo: "Hello Blockchain!"
+        }
+        return wallet.provider.getTransactionFee("bank", "bank-send", {
+            from: wallet.address,
+            to: middleware.address,
+            value,
+            memo: overrides.memo,
+            denom: smallestUnitName
+        }).then((fee) => {
+            overrides["fee"] = fee;
+            return wallet.transfer(middleware.address, value, overrides).then((receipt) => {
+                expect(receipt).to.exist;
+                if (!silent) console.log(indent, "Top-up.receipt:", JSON.stringify(receipt));
+            });
+        });
+    });
+
+    it("middleware-address for Get balance", function () {
+        return middleware.getBalance().then((balance) => {
+            expect(balance).to.exist;
+            if (!silent) console.log(indent, "middleware-address Balance:", formatMxw(balance), "(" + middleware.address + ")");
+        });
+    });
+
+    it("Create Multisig Tx, Error due to : Signature verification failed due to Invalid nonce value", function () {
+        if (!silent) console.log(indent, "\nstart: ==================Create Multisig Tx, Error due to : Signature verification failed due to Invalid nonce value\n");
+
+        let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
+            from: wallet.address,
+            to: wallet.address,
+            value: mxw.utils.parseMxw("1"),
+            memo: "pipipapipu",
+            denom: smallestUnitName
+        });
+
+        let overrides = {
+            accountNumber: multiSigWallet.multisigAccountState.value.accountNumber,
+            nonce: 1            // should be ZERO        
+        }
+
+        return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
+            transaction["fee"] = fee;
+            return multiSigWallet.sendTransaction(transaction, overrides).then((txReceipt) => {
+              expect(txReceipt).to.exist;
+                if (!silent) console.log(indent, "Create-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
+            }).catch(error => {
+                if (!silent) console.log(indent, "error.code: ", error.code);
+                if (!silent) console.log(indent, "Create Multisig Tx.Error: ", JSON.stringify(error));
+                if (!silent) console.log(indent, "\nend: ==================Create Multisig Tx, Error due to : Signature verification failed due to Invalid nonce value\n");
+            });
+     
+        });
+
+    });
+
+    it("Create Multisig Tx, using TWO signers", function () {
+        if (!silent) console.log(indent, "\nstart: ==================Create Multisig Tx, using TWO signers\n");
+
+        let transaction = providerConnection.getTransactionRequest("bank", "bank-send", {
+            from: multiSigWallet.groupAddress,
+            to: wallet.address,
+            value: mxw.utils.parseMxw("1"),
+            memo: "pipipapipu",
+            denom: smallestUnitName
+        });
+
+        return providerConnection.getTransactionFee(undefined, undefined, { tx: transaction }).then((fee) => {
+            transaction["fee"] = fee;
+            return multiSigWallet.sendTransaction(transaction).then((txReceipt) => {
+              expect(txReceipt).to.exist;
+                if (!silent) console.log(indent, "Create-MultiSig-Tx.receipt: ", JSON.stringify(txReceipt));
+                if (!silent) console.log(indent, "\nend: ==================Create Multisig Tx, using TWO signers\n");
+            });
+
+        });
+
+    });
+
+    it("Sign multiSig Transaction by 2nd signer, Error due to : Signature verification failed due to Invalid txID value", function () {
+       if (!silent) console.log(indent, "\nstart: ==================Sign multiSig Transaction by 2nd signer, Error due to : Signature verification failed due to Invalid txID value\n");
+
+       let anotherSigner = new MultiSig.MultiSigWallet(multiSigWallet.groupAddress, middleware)
+       anotherSigner.refresh();
+       return anotherSigner.sendConfirmTransaction(1, multiSigWallet.multisigAccountState.value.accountNumber).then((respond) => {
+           expect(respond).to.exist;
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.receipt: ", JSON.stringify(respond));
+       }).catch(error => {
+           if (!silent) console.log(indent, "error.code: ", error.code);
+           if (!silent) console.log(indent, "Sign-MultiSig-Tx.Error: ", JSON.stringify(error));
+           if (!silent) console.log(indent, "\nend: ==================Sign multiSig Transaction by 2nd signer, Error due to : Signature verification failed due to Invalid txID value\n");
+       });
+
+    });
+
+});
+
+
+///============================= start : SINGLE signers =============================
 describe('Suite: MultiSig - Create ', function () {
     this.slow(slowThreshold); // define the threshold for slow indicator
     it("Create", function () {
@@ -182,7 +738,7 @@ describe('Suite: MultiSig - Create ', function () {
             let anotherSigner = new MultiSig.MultiSigWallet(multiSigWallet.groupAddress, wallet)
             anotherSigner.refresh();
             
-            return anotherSigner.sendConfirmTransaction(0, overrides).then((respond) => {
+            return anotherSigner.sendConfirmTransaction(0, multiSigWallet.multisigAccountState.value.accountNumber, overrides).then((respond) => {
                 expect(respond).to.exist;
                 if (!silent) console.log(indent, "Sign-MultiSig-Tx.receipt: ", JSON.stringify(respond));
             }).catch(error => {
@@ -896,6 +1452,7 @@ describe('Suite: MultiSig - Case 4. Valid Case with ONE signer', function () {
     });
 
 });
+
 
 
 describe('Suite: MultiSig - Clean up', function () {

@@ -146,7 +146,7 @@ export class MultiSigWallet extends Signer {
         });
     }
 
-    public sendConfirmTransaction(transactionId: BigNumberish, overrides?: any) {
+    public sendConfirmTransaction(transactionId: BigNumberish, multisigAccountNumber: BigNumberish, overrides?: any) {
         if (!this.signer) {
             errors.throwError('confirm multisig transaction require signer', errors.NOT_INITIALIZED, { arg: 'signer' });
         }
@@ -171,7 +171,7 @@ export class MultiSigWallet extends Signer {
                             memo: pendingTx.value.memo
                         },
                         fee: pendingTx.value.fee,
-                        accountNumber: this.multisigAccountState.value.accountNumber
+                        accountNumber: multisigAccountNumber
                     }
                     // signing pending tx the counter(nonce) will be transactionId.
                     overrides = {
