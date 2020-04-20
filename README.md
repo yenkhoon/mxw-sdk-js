@@ -36,6 +36,7 @@ Install the mxw-sdk-js library from your project directory::
 Importing
 ---------
 
+
 **JavaScript (ES3)**
 
     var mxw = require('mxw-sdk-js');

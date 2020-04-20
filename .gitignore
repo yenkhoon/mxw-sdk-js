@@ -3,3 +3,6 @@ node_modules/
 docs/_build/
 tests/env/
 tests/env.ts
+dist/providers/
+dist/utils/
+dist/
