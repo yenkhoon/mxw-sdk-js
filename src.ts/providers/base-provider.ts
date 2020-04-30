@@ -820,10 +820,10 @@ export class BaseProvider extends Provider {
                     };
                     return this.perform('getMultiSigPendingTx', params).then((result) => {
                         if (result) {
-                            result = camelize(checkFormat({
+                            result = checkFormat({
                                 type: checkString,
                                 value: checkAny
-                            }, result));
+                            }, result);
                         }
                         return result;
                     });
