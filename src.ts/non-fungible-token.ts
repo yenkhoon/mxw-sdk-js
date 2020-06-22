@@ -254,8 +254,7 @@ export class NonFungibleToken {
                     to: toAddress,
                     memo: (overrides && overrides.memo) ? overrides.memo : ""
                 });
-                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
-
+                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
                 return tx;
             });
         });
@@ -306,8 +305,7 @@ export class NonFungibleToken {
                 from: signerAddress,
                 memo: (overrides && overrides.memo) ? overrides.memo : ""
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
-
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
             return tx;
         });
     }
@@ -398,7 +396,7 @@ export class NonFungibleToken {
                 properties: nonFungibleToken.properties || "",
                 symbol: nonFungibleToken.symbol
             });
-            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -445,7 +443,7 @@ export class NonFungibleToken {
                 from: address,
                 metadata
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -500,7 +498,7 @@ export class NonFungibleToken {
                     metadata: item.metadata || "",
                     memo: (overrides && overrides.memo) ? overrides.memo : ""
                 });
-                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx });
+                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
                 return tx;
             });
@@ -690,7 +688,7 @@ export class NonFungibleToken {
                 owner: signerAddress,
                 memo: (overrides && overrides.memo) ? overrides.memo : "",
             });
-            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -737,7 +735,7 @@ export class NonFungibleToken {
                 owner: signerAddress,
                 memo: (overrides && overrides.memo) ? overrides.memo : "",
             });
-            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });

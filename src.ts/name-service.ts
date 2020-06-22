@@ -159,7 +159,7 @@ export class Alias {
                 owner: signerAddress,
                 memo: (overrides && overrides.memo) ? overrides.memo : "",
             });
-            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
