@@ -251,7 +251,7 @@ export class MultiSigWallet extends Signer {
         if (overrides && overrides["accountNumber"]) {
             delete overrides["accountNumber"];
         }
-        if (overrides && overrides["nonce"]) {
+        if (overrides && overrides["nonce"] !== null)  {
             delete overrides["nonce"];
         }
         return this.signer.sign(transaction, overrides).then((signedTransaction) => {

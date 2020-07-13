@@ -55,7 +55,14 @@
     "dist-debug-utils": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0600-utils.ts",
     "dist-debug-crypto": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0610-crypto.ts",
     "dist-debug-multisig": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0700-multisig.ts",
-    "dist-debug-constants": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0610-constants.ts"
+    "dist-debug-constants": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0610-constants.ts",
+    "dist-test-multisig-FundTransfer": "npm run build && mocha --timeout 60000 -r ts-node/register tests/test-0710-multisig-FundTransfer.ts",
+    "dist-debug-multisig-FundTransfer": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0710-multisig-FundTransfer.ts",
+    "dist-test-multisig-NFTs-single-signer": "npm run build && mocha --timeout 60000 -r ts-node/register tests/test-0720-multisig-NFTs-single-signer.ts",
+    "dist-debug-multisig-NFTs-single-signer": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0720-multisig-NFTs-single-signer.ts",
+    "dist-test-multisig-NFTs-multiple-signers": "npm run build && mocha --timeout 60000 -r ts-node/register tests/test-0730-multisig-NFTs-multiple-signers.ts",
+    "dist-debug-multisig-NFTs-multiple-signers": "npm run build && mocha --inspect-brk --timeout 3000000 -r ts-node/register tests/test-0730-multisig-NFTs-multiple-signers.ts"
+  
   },
   "author": "Jean Soon <jeansoon@gmail.com>",
   "license": "MIT",
