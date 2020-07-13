@@ -1,6 +1,7 @@
 'use strict';
 
 interface Node {
+
     connection: {
         url: string,
         timeout: number
@@ -23,29 +24,37 @@ interface Node {
         middleware: string,
         feeCollector: string
     },
+
     fungibleToken: {
         provider: string,
         issuer: string,
         middleware: string,
         feeCollector: string,
     },
+
     nonFungibleToken: {
         provider: string,
         issuer: string,
         middleware: string,
         feeCollector: string,
-    }
+
+    },
 };
 
+
+
 const localnet: Node = {
+
     connection: {
-        url: "http://127.0.0.1:26657",
+        url: "http://localhost:26657",
         timeout: 60000
     },
+
     trace: {
         silent: true,
         silentRpc: true
     },
+
     chainId: "maxonrow-chain",
     name: "mxw",
     airDrop: "gold damp garlic turn host harbor else bird wrestle quarter surround parrot fan naive burst effort impact hen aware step gym ribbon inform cost",
@@ -71,13 +80,111 @@ const localnet: Node = {
         issuer: "appear scale write grow tiger puppy trick kite exhibit distance target cliff coin silly because train matrix weather list chat stamp warfare hobby ocean",
         middleware: "guard loop tell accuse village list prevent sea dolphin weapon own track spike venue gun blind carry hawk weapon track rain amazing author eagle",
         feeCollector: "mxw1md4u2zxz2ne5vsf9t4uun7q2k0nc3ly5g22dne",
+       
     }
+
 };
 
-const nodes: { [name: string]: Node } = { localnet };
-const nodeProvider: Node = localnet;
+
+
+const uatnet: Node = {
+    connection: {
+        url: "https://uatnet.usdp.io",
+        timeout: 60000
+    },
+
+    trace: {
+        silent: true,
+        silentRpc: true
+    },
+
+    chainId: "uatnet",
+    name: "mxw",
+    airDrop: "roof voyage expire ball image despair soldier token destroy rocket couch drink",
+    kyc: {
+        provider: "into demand chief rubber raw hospital unit tennis sentence fade flight cluster",
+        issuer: "pill maple dutch predict bulk goddess nice left paper heart loan fresh",
+        middleware: "avocado trade bright wolf marble penalty mimic curve funny name certain visa"
+    },
+    alias: {
+        provider: "",
+        issuer: "",
+        middleware: "",
+        feeCollector: ""
+    },
+
+    fungibleToken: {
+        provider: "mother paddle fire dolphin nuclear giggle fatal crop cupboard close abandon truck",
+        issuer: "dynamic car culture shell kiwi harsh tilt boost vote reopen arrow moon",
+        middleware: "hospital item sad baby mass turn ability exhibit obtain include trip please",
+        feeCollector: "mxw1qgwzdxf66tp5mjpkpfe593nvsst7qzfxzqq73d"
+    },
+
+    nonFungibleToken: {
+        provider: "mother paddle fire dolphin nuclear giggle fatal crop cupboard close abandon truck",
+        issuer: "dynamic car culture shell kiwi harsh tilt boost vote reopen arrow moon",
+        middleware: "hospital item sad baby mass turn ability exhibit obtain include trip please",
+        feeCollector: "mxw1qgwzdxf66tp5mjpkpfe593nvsst7qzfxzqq73d"
+
+    }
+
+};
+
+
+const testnet: Node = {
+    connection: {
+        url: "https://alloys-rpc.maxonrow.com",
+        timeout: 60000
+    },
+
+    trace: {
+        silent: true,
+        silentRpc: true
+    },
+
+    chainId: "alloys",
+    name: "mxw",
+    airDrop: "roof voyage expire ball image despair soldier token destroy rocket couch drink",
+    kyc: {
+        provider: "into demand chief rubber raw hospital unit tennis sentence fade flight cluster",
+        issuer: "pill maple dutch predict bulk goddess nice left paper heart loan fresh",
+        middleware: "avocado trade bright wolf marble penalty mimic curve funny name certain visa"
+    },
+    alias: {
+        provider: "",
+        issuer: "",
+        middleware: "",
+        feeCollector: ""
+    },
+
+    fungibleToken: {
+        provider: "mother paddle fire dolphin nuclear giggle fatal crop cupboard close abandon truck",
+        issuer: "dynamic car culture shell kiwi harsh tilt boost vote reopen arrow moon",
+        middleware: "hospital item sad baby mass turn ability exhibit obtain include trip please",
+        feeCollector: "mxw1qgwzdxf66tp5mjpkpfe593nvsst7qzfxzqq73d"
+    },
+
+    nonFungibleToken: {
+        provider: "mother paddle fire dolphin nuclear giggle fatal crop cupboard close abandon truck",
+        issuer: "dynamic car culture shell kiwi harsh tilt boost vote reopen arrow moon",
+        middleware: "hospital item sad baby mass turn ability exhibit obtain include trip please",
+        feeCollector: "mxw1qgwzdxf66tp5mjpkpfe593nvsst7qzfxzqq73d"
+
+    }
+
+};
+
+
+
+const nodes: { [name: string]: Node } = { localnet, uatnet, testnet };
+ const nodeProvider: Node = localnet;
+// const nodeProvider: Node = devnet;
+ // const nodeProvider: Node = uatnet;
+ //const nodeProvider: Node = testnet;
 
 export {
-    nodeProvider, nodes, localnet,
+    nodeProvider, nodes, localnet, uatnet, testnet,
     Node
 };
+
+
