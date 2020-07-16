@@ -1299,11 +1299,13 @@ export function getTransactionRequest(route: string, transactionType: string, ov
                     symbol: string,
                     from: string,
                     itemID: string,
+                    metadata: string,
                     memo: string
                 } = checkFormat({
                     symbol: checkString,
                     from: checkAddress,
                     itemID: checkString,
+                    metadata: checkString,
                     memo: allowNullOrEmpty(checkString)
                 }, overrides);
 
@@ -1316,7 +1318,8 @@ export function getTransactionRequest(route: string, transactionType: string, ov
                                 value: {
                                     symbol: params.symbol,
                                     from: params.from,
-                                    itemID: params.itemID
+                                    itemID: params.itemID,
+                                    metadata: params.metadata
                                 }
                             }
                         ],
