@@ -1,68 +1,48 @@
 'use strict';
-
-import { getAddress } from '../utils/address';
-import { BigNumber, bigNumberify } from '../utils/bignumber';
-import { hexDataLength, isHexString } from '../utils/bytes';
-import { getNetwork } from '../utils/networks';
-import { defineReadOnly, inheritable, resolveProperties, camelize } from '../utils/properties';
-import { parse as parseTransaction, TransactionLog, getTransactionRequest } from '../utils/transaction';
-import { poll } from '../utils/web';
-import { encode as base64Encode, decode as base64Decode } from '../utils/base64';
-import {
-    checkFormat, allowNullOrEmpty, arrayOf, checkHash, checkAddress, checkNumber, checkBigNumber, checkBoolean,
-    checkString, checkTimestamp, checkHex, checkHexAddress, checkAny, iterate, sortObject, isUndefinedOrNullOrEmpty
-} from '../utils/misc';
-import { toUtf8String, toUtf8Bytes, computeAddress } from '../utils';
-import { TransactionRequest } from '.';
-import { ValOperatorAddressPrefix } from '../constants';
-
-import * as errors from '../errors';
-
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+const address_1 = require("../utils/address");
+const bignumber_1 = require("../utils/bignumber");
+const bytes_1 = require("../utils/bytes");
+const networks_1 = require("../utils/networks");
+const properties_1 = require("../utils/properties");
+const transaction_1 = require("../utils/transaction");
+const web_1 = require("../utils/web");
+const base64_1 = require("../utils/base64");
+const misc_1 = require("../utils/misc");
+const utils_1 = require("../utils");
+const constants_1 = require("../constants");
+const errors = __importStar(require("../errors"));
 ///////////////////////////////
 // Imported Abstracts
-import { Provider, TransactionEvent, Status, DeliverTransaction, TransactionFeeSetting, KeyValue, TypeAttribute } from './abstract-provider';
-
-
-///////////////////////////////
-// Imported Types
-
-import {
-    Block, BlockTag, BlockInfo,
-    EventType,
-    Listener,
-    AccountState,
-    AliasState,
-    TokenState, NFTokenState, NFTokenItemState, TokenList, TokenAccountState, MultiSigPendingTx,
-    TransactionReceipt, TransactionResponse, TransactionFee
-} from './abstract-provider';
-
-import { Transaction } from '../utils/transaction';
-import { Network, Networkish } from '../utils/networks';
-
+const abstract_provider_1 = require("./abstract-provider");
 //////////////////////////////
 // Request and Response Checking
-
-function checkKeyValue(data: any): KeyValue {
-    return checkFormat({
-        key: checkString,
-        value: allowNullOrEmpty(checkString, null)
+function checkKeyValue(data) {
+    return misc_1.checkFormat({
+        key: misc_1.checkString,
+        value: misc_1.allowNullOrEmpty(misc_1.checkString, null)
     }, data);
 }
-
-function checkTypeAttribute(data: any): TypeAttribute {
-    return checkFormat({
-        type: checkString,
-        attributes: allowNullOrEmpty(arrayOf(checkKeyValue))
+function checkTypeAttribute(data) {
+    return misc_1.checkFormat({
+        type: misc_1.checkString,
+        attributes: misc_1.allowNullOrEmpty(misc_1.arrayOf(checkKeyValue))
     }, data);
 }
-
-function checkAliasState(data: any): AliasState {
-    return camelize(checkFormat({
-        Name: checkString,
-        Approved: checkBoolean,
-        Owner: checkString,
-        Metadata: checkString,
-        Fee: checkBigNumber
+function checkAliasState(data) {
+    return properties_1.camelize(misc_1.checkFormat({
+        Name: misc_1.checkString,
+        Approved: misc_1.checkBoolean,
+        Owner: misc_1.checkString,
+        Metadata: misc_1.checkString,
+        Fee: misc_1.checkBigNumber
     }, data), (key) => {
         switch (key) {
             case "Name": return "name";
@@ -74,18 +54,17 @@ function checkAliasState(data: any): AliasState {
         return key;
     });
 }
-
-function checkTokenState(data: any): TokenState {
-    return camelize(checkFormat({
-        Flags: checkNumber,
-        Name: checkString,
-        Symbol: checkString,
-        Decimals: checkNumber,
-        TotalSupply: checkBigNumber,
-        MaxSupply: checkBigNumber,
-        Owner: checkString,
-        NewOwner: checkString,
-        Metadata: checkString
+function checkTokenState(data) {
+    return properties_1.camelize(misc_1.checkFormat({
+        Flags: misc_1.checkNumber,
+        Name: misc_1.checkString,
+        Symbol: misc_1.checkString,
+        Decimals: misc_1.checkNumber,
+        TotalSupply: misc_1.checkBigNumber,
+        MaxSupply: misc_1.checkBigNumber,
+        Owner: misc_1.checkString,
+        NewOwner: misc_1.checkString,
+        Metadata: misc_1.checkString
     }, data), (key) => {
         switch (key) {
             case "Flags": return "flags";
@@ -101,20 +80,19 @@ function checkTokenState(data: any): TokenState {
         return key;
     });
 }
-
-function checkNonFungibleTokenState(data: any): NFTokenState {
-    return camelize(checkFormat({
-        Flags: checkNumber,
-        Name: checkString,
-        Symbol: checkString,
-        Owner: checkAddress,
-        NewOwner: checkAddress,
-        Metadata: allowNullOrEmpty(checkString),
-        Properties: allowNullOrEmpty(checkString),
-        TransferLimit: checkBigNumber,
-        MintLimit: checkBigNumber,
-        TotalSupply: checkBigNumber,
-        EndorserList: allowNullOrEmpty(arrayOf(checkAddress), [])
+function checkNonFungibleTokenState(data) {
+    return properties_1.camelize(misc_1.checkFormat({
+        Flags: misc_1.checkNumber,
+        Name: misc_1.checkString,
+        Symbol: misc_1.checkString,
+        Owner: misc_1.checkAddress,
+        NewOwner: misc_1.checkAddress,
+        Metadata: misc_1.allowNullOrEmpty(misc_1.checkString),
+        Properties: misc_1.allowNullOrEmpty(misc_1.checkString),
+        TransferLimit: misc_1.checkBigNumber,
+        MintLimit: misc_1.checkBigNumber,
+        TotalSupply: misc_1.checkBigNumber,
+        EndorserList: misc_1.allowNullOrEmpty(misc_1.arrayOf(misc_1.checkAddress), [])
     }, data), (key) => {
         switch (key) {
             case "Flags": return "flags";
@@ -132,15 +110,13 @@ function checkNonFungibleTokenState(data: any): NFTokenState {
         return key;
     });
 }
-
-function checkNonFungibleTokenItemState(data: any): NFTokenItemState {
-    return camelize(checkFormat({
-        ID: checkString,
-        Metadata: allowNullOrEmpty(checkString),
-        Properties: allowNullOrEmpty(checkString),
-        Frozen: checkBoolean,
-        TransferLimit: checkBigNumber
-
+function checkNonFungibleTokenItemState(data) {
+    return properties_1.camelize(misc_1.checkFormat({
+        ID: misc_1.checkString,
+        Metadata: misc_1.allowNullOrEmpty(misc_1.checkString),
+        Properties: misc_1.allowNullOrEmpty(misc_1.checkString),
+        Frozen: misc_1.checkBoolean,
+        TransferLimit: misc_1.checkBigNumber
     }, data), (key) => {
         switch (key) {
             case "ID": return "id";
@@ -148,18 +124,15 @@ function checkNonFungibleTokenItemState(data: any): NFTokenItemState {
             case "Properties": return "properties";
             case "Frozen": return "frozen";
             case "TransferLimit": return "transferLimit";
-
         }
         return key;
     });
 }
-
-
-function checkTokenAccountState(data: any): TokenAccountState {
-    return camelize(checkFormat({
-        Owner: checkString,
-        Frozen: checkBoolean,
-        Balance: checkBigNumber
+function checkTokenAccountState(data) {
+    return properties_1.camelize(misc_1.checkFormat({
+        Owner: misc_1.checkString,
+        Frozen: misc_1.checkBoolean,
+        Balance: misc_1.checkBigNumber
     }, data), (key) => {
         switch (key) {
             case "Owner": return "owner";
@@ -169,40 +142,39 @@ function checkTokenAccountState(data: any): TokenAccountState {
         return key;
     });
 }
-
-function checkStatus(data: any): Status {
-    return camelize(checkFormat({
+function checkStatus(data) {
+    return properties_1.camelize(misc_1.checkFormat({
         node_info: {
             protocol_version: {
-                p2p: checkNumber,
-                block: checkNumber,
-                app: checkNumber
+                p2p: misc_1.checkNumber,
+                block: misc_1.checkNumber,
+                app: misc_1.checkNumber
             },
-            id: checkHex,
-            listen_addr: checkString,
-            network: checkString,
-            version: checkString,
-            channels: checkNumber,
-            moniker: checkString,
+            id: misc_1.checkHex,
+            listen_addr: misc_1.checkString,
+            network: misc_1.checkString,
+            version: misc_1.checkString,
+            channels: misc_1.checkNumber,
+            moniker: misc_1.checkString,
             other: {
-                tx_index: checkString,
-                rpc_address: checkString
+                tx_index: misc_1.checkString,
+                rpc_address: misc_1.checkString
             }
         },
         sync_info: {
-            latest_block_hash: checkHash,
-            latest_app_hash: checkHash,
-            latest_block_height: checkNumber,
-            latest_block_time: checkTimestamp,
-            catching_up: checkBoolean
+            latest_block_hash: misc_1.checkHash,
+            latest_app_hash: misc_1.checkHash,
+            latest_block_height: misc_1.checkNumber,
+            latest_block_time: misc_1.checkTimestamp,
+            catching_up: misc_1.checkBoolean
         },
         validator_info: {
-            address: checkHexAddress,
+            address: misc_1.checkHexAddress,
             pub_key: {
-                type: checkString,
-                value: checkString
+                type: misc_1.checkString,
+                value: misc_1.checkString
             },
-            voting_power: checkNumber
+            voting_power: misc_1.checkNumber
         }
     }, data), (key) => {
         switch (key) {
@@ -212,26 +184,23 @@ function checkStatus(data: any): Status {
         return key;
     });
 }
-
-function checkTransactionFee(fee: any): TransactionFee {
-    return camelize(checkFormat({
-        amount: arrayOf(checkTransactionFeeAmount),
-        gas: checkBigNumber
+function checkTransactionFee(fee) {
+    return properties_1.camelize(misc_1.checkFormat({
+        amount: misc_1.arrayOf(checkTransactionFeeAmount),
+        gas: misc_1.checkBigNumber
     }, fee));
 }
-
-function checkTransactionFeeAmount(amount: any): TransactionFee {
-    return camelize(checkFormat({
-        amount: checkBigNumber,
-        denom: checkString
+function checkTransactionFeeAmount(amount) {
+    return properties_1.camelize(misc_1.checkFormat({
+        amount: misc_1.checkBigNumber,
+        denom: misc_1.checkString
     }, amount));
 }
-
-function checkBlock(data: any): Block {
-    let block: Block = camelize(checkFormat({
-        height: checkNumber,
+function checkBlock(data) {
+    let block = properties_1.camelize(misc_1.checkFormat({
+        height: misc_1.checkNumber,
         results: {
-            deliver_tx: allowNullOrEmpty(arrayOf(checkDeliverTransaction))
+            deliver_tx: misc_1.allowNullOrEmpty(misc_1.arrayOf(checkDeliverTransaction))
         }
     }, data), (key) => {
         switch (key) {
@@ -242,7 +211,6 @@ function checkBlock(data: any): Block {
         }
         return key;
     });
-
     if (!block.results.transactions || !Array.isArray(block.results.transactions)) {
         block.results.transactions = [];
     }
@@ -250,17 +218,13 @@ function checkBlock(data: any): Block {
         let transactionIndex = 0;
         for (let i = 0; i < block.results.transactions.length; i++) {
             let transaction = block.results.transactions[i];
-
             if (!transaction) {
                 // Remove any empty transaction
                 block.results.transactions.splice(i--, 1);
                 continue;
             }
-
             transaction.transactionIndex = transactionIndex++;
-
-            let events: TransactionEvent[] = [];
-
+            let events = [];
             if (transaction.events && Array.isArray(transaction.events)) {
                 let index = 0;
                 for (let event of transaction.events) {
@@ -274,17 +238,16 @@ function checkBlock(data: any): Block {
             transaction.events = events;
         }
     }
-    return camelize(block);
+    return properties_1.camelize(block);
 }
-
-function checkBlockInfo(data: any): BlockInfo {
-    data = camelize(checkFormat({
+function checkBlockInfo(data) {
+    data = properties_1.camelize(misc_1.checkFormat({
         block: {
             header: {
-                height: checkNumber,
-                time: checkTimestamp,
-                total_txs: checkNumber,
-                proposer_address: checkString
+                height: misc_1.checkNumber,
+                time: misc_1.checkTimestamp,
+                total_txs: misc_1.checkNumber,
+                proposer_address: misc_1.checkString
             }
         }
     }, data), (key) => {
@@ -295,19 +258,15 @@ function checkBlockInfo(data: any): BlockInfo {
         }
         return key;
     });
-
     if (data.block && data.block.header) {
-        data.block.header.proposerAddress = computeAddress(data.block.header.proposerAddress, ValOperatorAddressPrefix);
-        return {
-            ...data.block.header
-        }
+        data.block.header.proposerAddress = utils_1.computeAddress(data.block.header.proposerAddress, constants_1.ValOperatorAddressPrefix);
+        return Object.assign({}, data.block.header);
     }
     return undefined;
 }
-
-function checkDeliverTransaction(value: any): DeliverTransaction {
-    let transaction = camelize(checkFormat({
-        log: allowNullOrEmpty(checkString),
+function checkDeliverTransaction(value) {
+    let transaction = properties_1.camelize(misc_1.checkFormat({
+        log: misc_1.allowNullOrEmpty(misc_1.checkString),
         events: checkTransactionEvents
     }, value), (key) => {
         switch (key) {
@@ -315,22 +274,19 @@ function checkDeliverTransaction(value: any): DeliverTransaction {
         }
         return key;
     });
-
     try {
-        let logs = JSON.parse(transaction.logs as string);
+        let logs = JSON.parse(transaction.logs);
         transaction.logs = [];
         if (Array.isArray(logs)) {
             for (let log of logs) {
                 transaction.logs.push(checkTransactionLog(log));
             }
             if (0 < transaction.logs.length) {
-                let log: TransactionLog = transaction.logs[0] as TransactionLog;
-
+                let log = transaction.logs[0];
                 if (log && log.info && 0 <= log.info.nonce) {
                     transaction.nonce = log.info.nonce;
                     log.info.nonce = undefined; // remove it from redundant data
                 }
-
                 if (log && log.info && log.info.hash) {
                     transaction.hash = log.info.hash;
                     log.info.hash = undefined; // remove it from redundant data
@@ -339,32 +295,27 @@ function checkDeliverTransaction(value: any): DeliverTransaction {
         }
     }
     catch (error) { }
-
     if (!transaction.hash) {
         return undefined; // Discard failed transaction
     }
     return transaction;
 }
-
-function checkTransactionEvent(data: any): TransactionEvent {
+function checkTransactionEvent(data) {
     let kv = checkKeyValue(data);
     if ("string" === typeof kv.value) {
-        kv.value = JSON.parse(toUtf8String(base64Decode(kv.value)));
+        kv.value = JSON.parse(utils_1.toUtf8String(base64_1.decode(kv.value)));
     }
-
-    let event: TransactionEvent = camelize(checkFormat({
-        hash: checkString,
-        params: allowNullOrEmpty(arrayOf(checkString))
+    let event = properties_1.camelize(misc_1.checkFormat({
+        hash: misc_1.checkString,
+        params: misc_1.allowNullOrEmpty(misc_1.arrayOf(misc_1.checkString))
     }, kv.value));
-    event.address = checkAddress(toUtf8String(base64Decode(kv.key)));
+    event.address = misc_1.checkAddress(utils_1.toUtf8String(base64_1.decode(kv.key)));
     event.hash = "0x" + event.hash;
     return event;
 }
-
-function checkTransactionEvents(data: any): any {
-    let groups: TypeAttribute[] = allowNullOrEmpty(arrayOf(checkTypeAttribute))(data);
-    let events: TransactionEvent[] = [];
-
+function checkTransactionEvents(data) {
+    let groups = misc_1.allowNullOrEmpty(misc_1.arrayOf(checkTypeAttribute))(data);
+    let events = [];
     if (groups && Array.isArray(groups)) {
         for (let group of groups) {
             // Only support system events for the time being
@@ -378,18 +329,17 @@ function checkTransactionEvents(data: any): any {
     }
     return events;
 }
-
-function checkTransactionReceipt(transaction: any): TransactionReceipt {
-    let receipt: TransactionReceipt = camelize(checkFormat({
-        hash: checkHash,
-        height: checkNumber,
-        status: checkNumber,
-        index: checkNumber,
+function checkTransactionReceipt(transaction) {
+    let receipt = properties_1.camelize(misc_1.checkFormat({
+        hash: misc_1.checkHash,
+        height: misc_1.checkNumber,
+        status: misc_1.checkNumber,
+        index: misc_1.checkNumber,
         tx_result: {
-            log: checkString,
+            log: misc_1.checkString,
             events: checkTransactionEvents
         },
-        tx: checkString
+        tx: misc_1.checkString
     }, transaction), (key) => {
         switch (key) {
             case "txResult": return "result";
@@ -402,8 +352,7 @@ function checkTransactionReceipt(transaction: any): TransactionReceipt {
         return key;
     });
     if (receipt.result) {
-        let events: TransactionEvent[] = [];
-
+        let events = [];
         if (receipt.result.events && Array.isArray(receipt.result.events)) {
             let index = 0;
             for (let event of receipt.result.events) {
@@ -415,23 +364,20 @@ function checkTransactionReceipt(transaction: any): TransactionReceipt {
             }
         }
         receipt.result.events = events;
-
         if (receipt.result.logs) {
             try {
-                let logs = JSON.parse(receipt.result.logs as string);
+                let logs = JSON.parse(receipt.result.logs);
                 receipt.result.logs = [];
                 if (Array.isArray(logs)) {
                     for (let log of logs) {
                         receipt.result.logs.push(checkTransactionLog(log));
                     }
                     if (0 < receipt.result.logs.length) {
-                        let log: TransactionLog = receipt.result.logs[0] as TransactionLog;
-
+                        let log = receipt.result.logs[0];
                         if (log && log.info && 0 <= log.info.nonce) {
                             receipt.nonce = log.info.nonce;
                             log.info.nonce = undefined; // remove it from redundant data
                         }
-
                         if (log && log.info && log.info.hash) {
                             receipt.hash = log.info.hash;
                             log.info.hash = undefined; // remove it from redundant data
@@ -439,7 +385,9 @@ function checkTransactionReceipt(transaction: any): TransactionReceipt {
                     }
                 }
             }
-            catch (error) { receipt.result.logs = undefined; }
+            catch (error) {
+                receipt.result.logs = undefined;
+            }
         }
     }
     if (receipt.payload) {
@@ -449,196 +397,113 @@ function checkTransactionReceipt(transaction: any): TransactionReceipt {
         catch (error) {
         }
     }
-
     if (!receipt.hash) {
         return undefined; // Discard failed transaction
     }
-    return camelize(receipt);
+    return properties_1.camelize(receipt);
 }
-
-function checkTransactionLog(data: any): TransactionLog {
+function checkTransactionLog(data) {
     if ("string" === typeof data) {
         data = JSON.parse(data);
     }
-    let log: TransactionLog = camelize(checkFormat({
-        success: checkBoolean,
-        log: checkString
+    let log = properties_1.camelize(misc_1.checkFormat({
+        success: misc_1.checkBoolean,
+        log: misc_1.checkString
     }, data), (key) => {
         switch (key) {
             case "log": return "info";
         }
         return key;
     });
-
     if (log.info) {
         try {
-            log.info = checkFormat({
-                hash: checkHash,
-                nonce: checkBigNumber
-            }, JSON.parse(<any>log.info));
+            log.info = misc_1.checkFormat({
+                hash: misc_1.checkHash,
+                nonce: misc_1.checkBigNumber
+            }, JSON.parse(log.info));
         }
         catch (error) {
             log.info = {
                 hash: null,
                 nonce: null,
-                message: <any>log.info
-            }
+                message: log.info
+            };
         }
     }
     return log;
 }
-
-
 //////////////////////////////
 // Event Serializeing
-
-function getEventTag(eventName: EventType): string {
+function getEventTag(eventName) {
     if (typeof (eventName) === 'string') {
-        if (hexDataLength(eventName) === 20) {
-            return 'address:' + getAddress(eventName);
+        if (bytes_1.hexDataLength(eventName) === 20) {
+            return 'address:' + address_1.getAddress(eventName);
         }
-
         eventName = eventName.toLowerCase();
-
-        if (hexDataLength(eventName) === 32) {
+        if (bytes_1.hexDataLength(eventName) === 32) {
             return 'tx:' + eventName;
         }
-
         if (eventName.indexOf(':') === -1) {
             return eventName;
         }
     }
-
     throw new Error('invalid event - ' + eventName);
 }
-
 //////////////////////////////
 // Helper Object
-
 function getTime() {
     return (new Date()).getTime();
 }
-
-//////////////////////////////
-// Provider Object
-
-
-/**
- *  EventType
- *   - "block"
- *   - "pending"
- *   - "error"
- *   - address
- *   - filter
- *   - topics array
- *   - transaction hash
- */
-
-type _Event = {
-    listener: Listener;
-    once: boolean;
-    tag: string;
-}
-
-export class BaseProvider extends Provider {
-    private _network: Network;
-
-    private _events: Array<_Event>;
-
-    // To help mitigate the eventually conssitent nature of the blockchain
-    // we keep a mapping of events we emit. If we emit an event X, we expect
-    // that a user should be able to query for that event in the callback,
-    // if the node returns null, we stall the response until we get back a
-    // meaningful value, since we may be hitting a re-org, or a node that
-    // has not indexed the event yet.
-    // Events:
-    //   - t:{hash}    - Transaction hash
-    //   - b:{hash}    - BlockHash
-    //   - block       - The most recent emitted block
-    protected _emitted: { [eventName: string]: number | 'pending' };
-
-    private _pollingInterval: number;
-    private _poller: any; // @TODO: what does TypeScript think setInterval returns?
-
-    private _lastBlockNumber: number;
-
-    // string => BigNumber
-    private _balances: any;
-
-    private _fastBlockNumber: number;
-    private _fastBlockNumberPromise: Promise<number>;
-    private _fastQueryDate: number;
-
-
-    /**
-     *  ready
-     *
-     *  A Promise<Network> that resolves only once the provider is ready.
-     *
-     *  Sub-classes that call the super with a network without a chainId
-     *  MUST set this. Standard named networks have a known chainId.
-     *
-     */
-    protected ready: Promise<Network>;
-
-    constructor(network: Networkish | Promise<Network>) {
+class BaseProvider extends abstract_provider_1.Provider {
+    constructor(network) {
         super();
-        errors.checkNew(this, Provider);
-
+        errors.checkNew(this, abstract_provider_1.Provider);
         if (network instanceof Promise) {
-            defineReadOnly(this, 'ready', network.then((network) => {
-                defineReadOnly(this, '_network', network);
+            properties_1.defineReadOnly(this, 'ready', network.then((network) => {
+                properties_1.defineReadOnly(this, '_network', network);
                 return network;
             }));
-
             // Squash any "unhandled promise" errors; the don't need to be handled
             this.ready.catch((error) => { });
-
-        } else {
-            let knownNetwork = getNetwork((network == null) ? 'homestead' : network);
+        }
+        else {
+            let knownNetwork = networks_1.getNetwork((network == null) ? 'homestead' : network);
             if (knownNetwork) {
-                defineReadOnly(this, '_network', knownNetwork);
-                defineReadOnly(this, 'ready', Promise.resolve(this._network));
-
-            } else {
+                properties_1.defineReadOnly(this, '_network', knownNetwork);
+                properties_1.defineReadOnly(this, 'ready', Promise.resolve(this._network));
+            }
+            else {
                 errors.throwError('invalid network', errors.INVALID_ARGUMENT, { arg: 'network', value: network });
             }
         }
-
         this._lastBlockNumber = -2;
-
         // Balances being watched for changes
         this._balances = {};
-
         // Events being listened to
         this._events = [];
-
         this._pollingInterval = 4000;
-
         this._emitted = { block: -2 };
-
         this._fastQueryDate = 0;
     }
-
-    getBlockNumber(): Promise<number> {
+    getBlockNumber() {
         return this.ready.then(() => {
             return this.perform('getBlockNumber', {}).then((result) => {
                 let value = result ? parseInt(result) : 0;
-                if (0 >= value) { throw new Error('invalid response - getBlockNumber'); }
+                if (0 >= value) {
+                    throw new Error('invalid response - getBlockNumber');
+                }
                 this._setFastBlockNumber(value);
                 return value;
             });
         });
     }
-
-    getTransactionRequest(route: string, transactionType: string, overrides?: any) {
-        return getTransactionRequest(route, transactionType, overrides);
+    getTransactionRequest(route, transactionType, overrides) {
+        return transaction_1.getTransactionRequest(route, transactionType, overrides);
     }
-
-    getTransactionFee(route: string, transactionType: string, overrides?: any): Promise<TransactionFee> {
+    getTransactionFee(route, transactionType, overrides) {
         return this.ready.then(() => {
-            let tx: TransactionRequest = (overrides && overrides.tx) ? overrides.tx : getTransactionRequest(route, transactionType, overrides);
-            let transaction: Transaction = iterate(tx, function (key, value, type) {
+            let tx = (overrides && overrides.tx) ? overrides.tx : transaction_1.getTransactionRequest(route, transactionType, overrides);
+            let transaction = misc_1.iterate(tx, function (key, value, type) {
                 switch (type) {
                     case "Number":
                     case "BigNumber":
@@ -646,44 +511,40 @@ export class BaseProvider extends Provider {
                 }
                 return value;
             });
-            transaction = sortObject(transaction);
-
+            transaction = misc_1.sortObject(transaction);
             let params = {
-                unsignedTransaction: base64Encode(toUtf8Bytes(JSON.stringify(transaction)))
-            }
+                unsignedTransaction: base64_1.encode(utils_1.toUtf8Bytes(JSON.stringify(transaction)))
+            };
             return this.perform('getTransactionFee', params).then((fee) => {
                 fee = checkTransactionFee(fee);
                 return fee;
             });
         });
     }
-
-    getTransactionFeeSetting(transactionType: string, overrides?: any): Promise<TransactionFeeSetting> {
+    getTransactionFeeSetting(transactionType, overrides) {
         return this.ready.then(() => {
             let params = {
                 path: "/custom/fee/get_msg_fee_setting/" + transactionType,
-            }
+            };
             return this.perform('getTransactionFeeSetting', params);
         });
     }
-
-    getStatus(): Promise<any> {
+    getStatus() {
         return this.ready.then(() => {
             return this.perform('getStatus', {}).then((result) => {
                 return checkStatus(result);
             });
         });
     }
-
-    getTokenState(symbol: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<TokenState> {
+    getTokenState(symbol, blockTag) {
         return this.ready.then(() => {
-            return resolveProperties({ symbol: symbol, blockTag: blockTag }).then(({ symbol, blockTag }) => {
+            return properties_1.resolveProperties({ symbol: symbol, blockTag: blockTag }).then(({ symbol, blockTag }) => {
                 let params = {
                     symbol: symbol,
                     blockTag: checkBlockTag(blockTag)
                 };
                 return this.perform('getTokenState', params).then((result) => {
-                    let state: TokenState = result;
+                    let state = result;
                     if (result) {
                         state = checkTokenState(result);
                     }
@@ -692,18 +553,17 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getTokenList(blockTag?: BlockTag | Promise<BlockTag>): Promise<TokenList> {
+    getTokenList(blockTag) {
         return this.ready.then(() => {
-            return resolveProperties({ blockTag: blockTag }).then(({ blockTag }) => {
+            return properties_1.resolveProperties({ blockTag: blockTag }).then(({ blockTag }) => {
                 let params = {
                     blockTag: checkBlockTag(blockTag)
                 };
                 return this.perform('getTokenList', params).then((result) => {
                     if (result) {
-                        result = camelize(checkFormat({
-                            fungible: arrayOf(checkString),
-                            nonfungible: arrayOf(checkString)
+                        result = properties_1.camelize(misc_1.checkFormat({
+                            fungible: misc_1.arrayOf(misc_1.checkString),
+                            nonfungible: misc_1.arrayOf(misc_1.checkString)
                         }, result));
                     }
                     return result;
@@ -711,10 +571,9 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getTokenAccountState(symbol: string | Promise<string>, addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<TokenAccountState> {
+    getTokenAccountState(symbol, addressOrName, blockTag) {
         return this.ready.then(() => {
-            return resolveProperties({ symbol: symbol, addressOrName: addressOrName, blockTag: blockTag }).then(({ symbol, addressOrName, blockTag }) => {
+            return properties_1.resolveProperties({ symbol: symbol, addressOrName: addressOrName, blockTag: blockTag }).then(({ symbol, addressOrName, blockTag }) => {
                 return this.resolveName(addressOrName).then((address) => {
                     let params = {
                         symbol: symbol,
@@ -729,8 +588,8 @@ export class BaseProvider extends Provider {
                             result = {
                                 owner: address,
                                 frozen: false,
-                                balance: bigNumberify(0)
-                            }
+                                balance: bignumber_1.bigNumberify(0)
+                            };
                         }
                         return result;
                     });
@@ -738,26 +597,23 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getTokenAccountBalance(symbol: string | Promise<string>, addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
+    getTokenAccountBalance(symbol, addressOrName, blockTag) {
         return this.getTokenAccountState(symbol, addressOrName, blockTag).then((state) => {
             if (state && state.balance) {
                 return state.balance;
             }
-            return bigNumberify(0);
+            return bignumber_1.bigNumberify(0);
         });
     }
-
-    getNFTokenState(symbol: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<NFTokenState> {
+    getNFTokenState(symbol, blockTag) {
         return this.ready.then(() => {
-            return resolveProperties({ symbol: symbol, blockTag: blockTag }).then(({ symbol, blockTag }) => {
+            return properties_1.resolveProperties({ symbol: symbol, blockTag: blockTag }).then(({ symbol, blockTag }) => {
                 let params = {
                     symbol: symbol,
                     blockTag: checkBlockTag(blockTag)
                 };
                 return this.perform('getNFTokenState', params).then((result) => {
-                    let state: NFTokenState = result;
-
+                    let state = result;
                     if (result) {
                         state = checkNonFungibleTokenState(result);
                     }
@@ -766,17 +622,16 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getNFTokenItemState(symbol: string | Promise<string>, itemID: string, blockTag?: BlockTag | Promise<BlockTag>): Promise<NFTokenItemState> {
+    getNFTokenItemState(symbol, itemID, blockTag) {
         return this.ready.then(() => {
-            return resolveProperties({ symbol: symbol, itemID: itemID, blockTag: blockTag }).then(({ symbol, itemID, blockTag }) => {
+            return properties_1.resolveProperties({ symbol: symbol, itemID: itemID, blockTag: blockTag }).then(({ symbol, itemID, blockTag }) => {
                 let params = {
                     symbol: symbol,
                     itemID: itemID,
                     blockTag: checkBlockTag(blockTag)
                 };
                 return this.perform('getNFTokenItemState', params).then((result) => {
-                    let state: NFTokenItemState = result;
+                    let state = result;
                     if (result) {
                         state = checkNonFungibleTokenItemState(result);
                     }
@@ -785,9 +640,8 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getAliasState(address: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<AliasState> {
-        return resolveProperties({ address, blockTag }).then(({ address, blockTag }) => {
+    getAliasState(address, blockTag) {
+        return properties_1.resolveProperties({ address, blockTag }).then(({ address, blockTag }) => {
             return this.ready.then(() => {
                 let params = {
                     address,
@@ -802,10 +656,9 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getAccountState(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<AccountState> {
+    getAccountState(addressOrName, blockTag) {
         return this.ready.then(() => {
-            return resolveProperties({ addressOrName: addressOrName, blockTag: blockTag }).then(({ addressOrName, blockTag }) => {
+            return properties_1.resolveProperties({ addressOrName: addressOrName, blockTag: blockTag }).then(({ addressOrName, blockTag }) => {
                 return this.resolveName(addressOrName).then((address) => {
                     let params = {
                         address: address,
@@ -813,9 +666,9 @@ export class BaseProvider extends Provider {
                     };
                     return this.perform('getAccountState', params).then((result) => {
                         if (result) {
-                            result = camelize(checkFormat({
-                                type: checkString,
-                                value: checkAny
+                            result = properties_1.camelize(misc_1.checkFormat({
+                                type: misc_1.checkString,
+                                value: misc_1.checkAny
                             }, result));
                         }
                         return result;
@@ -824,127 +677,91 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getMultiSigPendingTx(addressOrName: string | Promise<string>, txID: string, blockTag?: BlockTag | Promise<BlockTag>): Promise<MultiSigPendingTx> {
-        return this.ready.then(() => {
-            return resolveProperties({ addressOrName: addressOrName, txID, blockTag: blockTag }).then(({ addressOrName, blockTag }) => {
-                return this.resolveName(addressOrName).then((address) => {
-                    let params = {
-                        address: address,
-                        txID:  txID,
-                        blockTag: checkBlockTag(blockTag)
-                    };
-                    return this.perform('getMultiSigPendingTx', params).then((result) => {
-                        if (result) {
-                            result = checkFormat({
-                                type: checkString,
-                                value: checkAny
-                            }, result);
-                        }
-                        return result;
-                    });
-                });
-            });
-        });
-    }
-
-
-    getAccountNumber(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
+    getAccountNumber(addressOrName, blockTag) {
         return this.ready.then(() => {
             return this.getAccountState(addressOrName, blockTag).then((result) => {
                 if (result && result.value && result.value.accountNumber) {
-                    return bigNumberify(result.value.accountNumber);
+                    return bignumber_1.bigNumberify(result.value.accountNumber);
                 }
-                return bigNumberify(0);
+                return bignumber_1.bigNumberify(0);
             });
         });
     }
-
-    getBalance(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
+    getBalance(addressOrName, blockTag) {
         return this.ready.then(() => {
             return this.getAccountState(addressOrName, blockTag).then((result) => {
                 if (result && result.value && result.value.coins) {
                     let coins = result.value.coins;
                     if (0 < coins.length) {
                         if (coins[0].amount) {
-                            return bigNumberify(coins[0].amount);
+                            return bignumber_1.bigNumberify(coins[0].amount);
                         }
                     }
                 }
-                return bigNumberify(0);
+                return bignumber_1.bigNumberify(0);
             });
         });
     }
-
-    getTransactionCount(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<BigNumber> {
+    getTransactionCount(addressOrName, blockTag) {
         return this.ready.then(() => {
             return this.getAccountState(addressOrName, blockTag).then((result) => {
                 if (result && result.value && result.value.sequence) {
-                    return bigNumberify(result.value.sequence);
+                    return bignumber_1.bigNumberify(result.value.sequence);
                 }
-                return bigNumberify(0);
+                return bignumber_1.bigNumberify(0);
             });
         });
     }
-
-    sendTransaction(signedTransaction: string | Promise<string>, overrides?: any): Promise<TransactionResponse> {
+    sendTransaction(signedTransaction, overrides) {
         return this.ready.then(() => {
-            return resolveProperties({ signedTransaction: signedTransaction }).then(({ signedTransaction }) => {
+            return properties_1.resolveProperties({ signedTransaction: signedTransaction }).then(({ signedTransaction }) => {
                 let params = { signedTransaction };
                 let async = overrides && overrides.async ? true : false;
                 return this.perform(async ? 'sendTransactionAsync' : 'sendTransaction', params).then((result) => {
-                    return this._wrapTransaction(parseTransaction(signedTransaction), result.hash, result.blockNumber);
+                    return this._wrapTransaction(transaction_1.parse(signedTransaction), result.hash, result.blockNumber);
                 }, function (error) {
-                    error.transaction = parseTransaction(signedTransaction);
+                    error.transaction = transaction_1.parse(signedTransaction);
                     if (error.response && error.response.hash) {
-                        (<any>error).transactionHash = error.response.hash;
+                        error.transactionHash = error.response.hash;
                     }
                     throw error;
                 });
             });
         });
     }
-
     // This should be called by any subclass wrapping a TransactionResponse
-    _wrapTransaction(tx: Transaction, hash?: string, blockNumber?: number): TransactionResponse {
+    _wrapTransaction(tx, hash, blockNumber) {
         // Check the hash we expect is the same as the hash the server reported
         if (hash != null) {
-            if (hexDataLength(hash) !== 32) {
+            if (bytes_1.hexDataLength(hash) !== 32) {
                 errors.throwError('invalid response - sendTransaction', errors.INVALID_ARGUMENT, { expectedHash: tx.hash, returnedHash: hash });
             }
-
             // TODO Currently we are not able to calculate the transaction hash that based on amino format
             // RISK: There is a risk to lost a sent transaction when the transaction response is not available, but the network has captured and processed it.
             tx.hash = hash.toLowerCase();
-
             hash = hash.toLowerCase();
             if (tx.hash !== hash) {
                 errors.throwError('Transaction hash mismatch from Provider.sendTransaction.', errors.UNKNOWN_ERROR, { expectedHash: tx.hash, returnedHash: hash });
             }
         }
-
-        let result: TransactionResponse = <TransactionResponse>tx;
-
+        let result = tx;
         if (!result.blockNumber && blockNumber) {
             result.blockNumber = blockNumber;
         }
-
         // @TODO: (confirmations? number, timeout? number)
-        result.wait = (confirmations?: number) => {
-
+        result.wait = (confirmations) => {
             // We know this transaction *must* exist (whether it gets mined is
             // another story), so setting an emitted value forces us to
             // wait even if the node returns null for the receipt
             if (confirmations !== 0) {
                 this._emitted['t:' + tx.hash] = 'pending';
             }
-
             return this.waitForTransaction(tx.hash, confirmations).then((receipt) => {
-                if (receipt == null && confirmations === 0) { return null; }
-
+                if (receipt == null && confirmations === 0) {
+                    return null;
+                }
                 // No longer pending, allow the polling loop to garbage collect this
                 this._emitted['t:' + tx.hash] = receipt.blockNumber;
-
                 if (receipt.status === 0) {
                     errors.throwError('transaction failed', errors.CALL_EXCEPTION, {
                         transactionHash: tx.hash,
@@ -954,31 +771,26 @@ export class BaseProvider extends Provider {
                 return receipt;
             });
         };
-
         return result;
     }
-
-    getBlock(blockTag: BlockTag | Promise<BlockTag>): Promise<Block> {
+    getBlock(blockTag) {
         return this.ready.then(() => {
-            return resolveProperties({ blockTag }).then(({ blockTag }) => {
+            return properties_1.resolveProperties({ blockTag }).then(({ blockTag }) => {
                 try {
                     let blockNumber;
-
                     blockTag = checkBlockTag(blockTag);
-                    if (isHexString(blockTag)) {
+                    if (bytes_1.isHexString(blockTag)) {
                         blockNumber = parseInt(blockTag.substring(2), 16);
                     }
                     else {
                         blockNumber = parseInt(blockTag);
                     }
-
                     if (0 == blockNumber) {
                         return this.getBlockNumber().then((blockNumber) => {
                             return this.getBlock(blockNumber);
                         });
                     }
-
-                    return poll(() => {
+                    return web_1.poll(() => {
                         let promises = [
                             // Query block result
                             this.perform('getBlock', { blockTag: blockNumber.toString() }),
@@ -988,8 +800,8 @@ export class BaseProvider extends Provider {
                             this.perform('getBlockInfo', { blockTag: (blockNumber + 1).toString() })
                         ];
                         return Promise.all(promises).then((results) => {
-                            if (isUndefinedOrNullOrEmpty(results) ||
-                                isUndefinedOrNullOrEmpty(results[0]) || isUndefinedOrNullOrEmpty(results[1])) {
+                            if (misc_1.isUndefinedOrNullOrEmpty(results) ||
+                                misc_1.isUndefinedOrNullOrEmpty(results[0]) || misc_1.isUndefinedOrNullOrEmpty(results[1])) {
                                 if (blockNumber <= this._emitted.block) {
                                     return undefined;
                                 }
@@ -997,39 +809,31 @@ export class BaseProvider extends Provider {
                             }
                             let block = checkBlock(results[0]);
                             let blockInfo = checkBlockInfo(results[1]);
-
                             blockInfo.blockTime = null;
-
-                            if (!isUndefinedOrNullOrEmpty(results[2])) {
+                            if (!misc_1.isUndefinedOrNullOrEmpty(results[2])) {
                                 let newBlockInfo = checkBlockInfo(results[2]);
                                 blockInfo.blockTime = newBlockInfo.blockTime;
                             }
-                            return {
-                                ...block,
-                                ...blockInfo
-                            }
+                            return Object.assign(Object.assign({}, block), blockInfo);
                         });
                     }, { onceBlock: this });
-                } catch (error) { }
-
+                }
+                catch (error) { }
                 throw new Error('invalid block tag');
             });
         });
     }
-
-    getTransaction(transactionHash: string): Promise<TransactionResponse> {
-        return <Promise<TransactionResponse>>this.getTransactionReceipt(transactionHash);
+    getTransaction(transactionHash) {
+        return this.getTransactionReceipt(transactionHash);
     }
-
-    checkTransactionReceipt(receipt: TransactionReceipt, code?: string, message?: string, params?: any) {
+    checkTransactionReceipt(receipt, code, message, params) {
         return this.checkResponseLog("", receipt, code, message, params);
     }
-
-    getTransactionReceipt(transactionHash: string): Promise<TransactionReceipt> {
+    getTransactionReceipt(transactionHash) {
         return this.ready.then(() => {
-            return resolveProperties({ transactionHash: transactionHash }).then(({ transactionHash }) => {
-                let params = { transactionHash: checkHash(transactionHash, true) };
-                return poll(() => {
+            return properties_1.resolveProperties({ transactionHash: transactionHash }).then(({ transactionHash }) => {
+                let params = { transactionHash: misc_1.checkHash(transactionHash, true) };
+                return web_1.poll(() => {
                     return this.perform('getTransactionReceipt', params).then((result) => {
                         if (result == null) {
                             if (this._emitted['t:' + transactionHash] == null) {
@@ -1037,34 +841,30 @@ export class BaseProvider extends Provider {
                             }
                             return undefined;
                         }
-
                         let tx = checkTransactionReceipt(result);
-
                         if (tx) {
                             if (tx.blockNumber == null) {
                                 tx.confirmations = 0;
-
-                            } else if (tx.confirmations == null) {
+                            }
+                            else if (tx.confirmations == null) {
                                 return this._getFastBlockNumber().then((blockNumber) => {
-
                                     // Add the confirmations using the fast block number (pessimistic)
                                     let confirmations = (blockNumber - tx.blockNumber) + 1;
-                                    if (confirmations <= 0) { confirmations = 1; }
+                                    if (confirmations <= 0) {
+                                        confirmations = 1;
+                                    }
                                     tx.confirmations = confirmations;
-
                                     return tx;
                                 });
                             }
                         }
-
                         return tx;
                     });
                 }, { onceBlock: this });
             });
         });
     }
-
-    getPrice(): Promise<number> {
+    getPrice() {
         return this.ready.then(() => {
             return this.perform('getPrice', {}).then((result) => {
                 // @TODO: Check valid float
@@ -1072,16 +872,14 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    isWhitelisted(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<boolean> {
-        return resolveProperties({ addressOrName: addressOrName, blockTag: blockTag }).then(({ addressOrName, blockTag }) => {
+    isWhitelisted(addressOrName, blockTag) {
+        return properties_1.resolveProperties({ addressOrName: addressOrName, blockTag: blockTag }).then(({ addressOrName, blockTag }) => {
             // If it is a promise, resolve it then recurse
             if (addressOrName instanceof Promise) {
                 return addressOrName.then((address) => {
                     return this.isWhitelisted(address, blockTag);
                 });
             }
-
             return this.ready.then(() => {
                 let params = {
                     address: addressOrName,
@@ -1093,16 +891,14 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    getKycAddress(addressOrName: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
-        return resolveProperties({ addressOrName: addressOrName, blockTag: blockTag }).then(({ addressOrName, blockTag }) => {
+    getKycAddress(addressOrName, blockTag) {
+        return properties_1.resolveProperties({ addressOrName: addressOrName, blockTag: blockTag }).then(({ addressOrName, blockTag }) => {
             // If it is a promise, resolve it then recurse
             if (addressOrName instanceof Promise) {
                 return addressOrName.then((address) => {
                     return this.getKycAddress(address, blockTag);
                 });
             }
-
             return this.ready.then(() => {
                 let params = {
                     address: addressOrName,
@@ -1114,14 +910,13 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    resolveName(name: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
-        return resolveProperties({ name: name, blockTag: blockTag }).then(({ name, blockTag }) => {
+    resolveName(name, blockTag) {
+        return properties_1.resolveProperties({ name: name, blockTag: blockTag }).then(({ name, blockTag }) => {
             // If it is already an address, nothing to resolve
             try {
-                return getAddress(name);
-            } catch (error) { }
-
+                return address_1.getAddress(name);
+            }
+            catch (error) { }
             return this.ready.then(() => {
                 let params = {
                     name: name,
@@ -1136,17 +931,14 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    lookupAddress(address: string | Promise<string>, blockTag?: BlockTag | Promise<BlockTag>): Promise<string> {
-        return resolveProperties({ address: address, blockTag: blockTag }).then(({ address, blockTag }) => {
+    lookupAddress(address, blockTag) {
+        return properties_1.resolveProperties({ address: address, blockTag: blockTag }).then(({ address, blockTag }) => {
             if (address instanceof Promise) {
                 return address.then((address) => {
                     return this.lookupAddress(address);
                 });
             }
-
-            address = getAddress(address);
-
+            address = address_1.getAddress(address);
             return this.ready.then(() => {
                 let params = {
                     address: address,
@@ -1158,83 +950,74 @@ export class BaseProvider extends Provider {
             });
         });
     }
-
-    static checkTransactionReceipt(transaction: any): TransactionReceipt {
+    static checkTransactionReceipt(transaction) {
         return checkTransactionReceipt(transaction);
     }
-
-    doPoll(): void {
+    doPoll() {
     }
-
-    perform(method: string, params: any): Promise<any> {
+    perform(method, params) {
         errors.throwError(method + ' not implemented', errors.NOT_IMPLEMENTED, { operation: method });
         return null;
     }
-
-    checkResponseLog(method: string, result: any, code?: string, message?: string, params?: any) {
+    checkResponseLog(method, result, code, message, params) {
         errors.throwError(method + ' not implemented', errors.NOT_IMPLEMENTED, { operation: method });
         return null;
     }
-
-    protected _startPending(): void {
+    _startPending() {
         errors.warn('WARNING: this provider does not support pending events');
     }
-
-    protected _stopPending(): void {
+    _stopPending() {
     }
-
-    private _addEventListener(eventName: EventType, listener: Listener, once: boolean): void {
+    _addEventListener(eventName, listener, once) {
         this._events.push({
             tag: getEventTag(eventName),
             listener: listener,
             once: once,
         });
-        if (eventName === 'pending') { this._startPending(); }
+        if (eventName === 'pending') {
+            this._startPending();
+        }
         this.polling = true;
     }
-
-    on(eventName: EventType, listener: Listener): Provider {
+    on(eventName, listener) {
         this._addEventListener(eventName, listener, false);
         return this;
     }
-
-    once(eventName: EventType, listener: Listener): Provider {
+    once(eventName, listener) {
         this._addEventListener(eventName, listener, true);
         return this;
     }
-
-    addEventListener(eventName: EventType, listener: Listener): Provider {
+    addEventListener(eventName, listener) {
         return this.on(eventName, listener);
     }
-
-    emit(eventName: EventType, ...args: Array<any>): boolean {
+    emit(eventName, ...args) {
         let result = false;
-
         let eventTag = getEventTag(eventName);
         this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag) { return true; }
+            if (event.tag !== eventTag) {
+                return true;
+            }
             setTimeout(() => {
                 event.listener.apply(this, args);
             }, 0);
             result = true;
             return !(event.once);
         });
-
-        if (this.listenerCount() === 0) { this.polling = false; }
-
+        if (this.listenerCount() === 0) {
+            this.polling = false;
+        }
         return result;
     }
-
-    listenerCount(eventName?: EventType): number {
-        if (!eventName) { return this._events.length; }
-
+    listenerCount(eventName) {
+        if (!eventName) {
+            return this._events.length;
+        }
         let eventTag = getEventTag(eventName);
         return this._events.filter((event) => {
             return (event.tag === eventTag);
         }).length;
     }
-
-    listeners(eventName: EventType): Array<Listener> {
+    listeners(eventName) {
         let eventTag = getEventTag(eventName);
         return this._events.filter((event) => {
             return (event.tag === eventTag);
@@ -1242,74 +1025,77 @@ export class BaseProvider extends Provider {
             return event.listener;
         });
     }
-
-    removeAllListeners(eventName?: EventType): Provider {
+    removeAllListeners(eventName) {
         if (eventName == null) {
             this._events = [];
             this._stopPending();
-        } else {
+        }
+        else {
             let eventTag = getEventTag(eventName);
             this._events = this._events.filter((event) => {
                 return (event.tag !== eventTag);
             });
-            if (eventName === 'pending') { this._stopPending(); }
+            if (eventName === 'pending') {
+                this._stopPending();
+            }
         }
-
-        if (this._events.length === 0) { this.polling = false; }
-
+        if (this._events.length === 0) {
+            this.polling = false;
+        }
         return this;
     }
-
-    removeListener(eventName: EventType, listener: Listener): Provider {
+    removeListener(eventName, listener) {
         let found = false;
-
         let eventTag = getEventTag(eventName);
         this._events = this._events.filter((event) => {
-            if (event.tag !== eventTag || event.listener != listener) { return true; }
-            if (found) { return true; }
+            if (event.tag !== eventTag || event.listener != listener) {
+                return true;
+            }
+            if (found) {
+                return true;
+            }
             found = true;
             return false;
         });
-
-        if (eventName === 'pending' && this.listenerCount('pending') === 0) { this._stopPending(); }
-        if (this.listenerCount() === 0) { this.polling = false; }
-
+        if (eventName === 'pending' && this.listenerCount('pending') === 0) {
+            this._stopPending();
+        }
+        if (this.listenerCount() === 0) {
+            this.polling = false;
+        }
         return this;
     }
-
-    private _doPoll(): void {
+    _doPoll() {
         this.getBlockNumber().then((blockNumber) => {
             this._setFastBlockNumber(blockNumber);
-
             // If the block hasn't changed, meh.
-            if (blockNumber === this._lastBlockNumber) { return; }
-
+            if (blockNumber === this._lastBlockNumber) {
+                return;
+            }
             // First polling cycle, trigger a "block" events
             if (this._emitted.block === -2) {
                 this._emitted.block = blockNumber - 1;
             }
-
             // Notify all listener for each block that has passed
-            for (let i = (<number>this._emitted.block) + 1; i <= blockNumber; i++) {
+            for (let i = this._emitted.block + 1; i <= blockNumber; i++) {
                 this.emit('block', i);
             }
-
             // The emitted block was updated, check for obsolete events
-            if ((<number>this._emitted.block) !== blockNumber) {
+            if (this._emitted.block !== blockNumber) {
                 this._emitted.block = blockNumber;
-
                 Object.keys(this._emitted).forEach((key) => {
                     // The block event does not expire
-                    if (key === 'block') { return; }
-
+                    if (key === 'block') {
+                        return;
+                    }
                     // The block we were at when we emitted this event
                     let eventBlockNumber = this._emitted[key];
-
                     // We cannot garbage collect pending transactions or blocks here
                     // They should be garbage collected by the Provider when setting
                     // "pending" events
-                    if (eventBlockNumber === 'pending') { return; }
-
+                    if (eventBlockNumber === 'pending') {
+                        return;
+                    }
                     // Evict any transaction hashes or block hashes over 12 blocks
                     // old, since they should not return null anyways
                     if (blockNumber - eventBlockNumber > 12) {
@@ -1317,122 +1103,104 @@ export class BaseProvider extends Provider {
                     }
                 });
             }
-
             // First polling cycle
             if (this._lastBlockNumber === -2) {
                 this._lastBlockNumber = blockNumber - 1;
             }
-
             // Sweep balances and remove addresses we no longer have events for
-            let newBalances: any = {};
-
+            let newBalances = {};
             // Find all transaction hashes we are waiting on
-            let uniqueEventTags: { [tag: string]: boolean } = {};
+            let uniqueEventTags = {};
             this._events.forEach((event) => {
                 uniqueEventTags[event.tag] = true;
             });
-
             Object.keys(uniqueEventTags).forEach((tag) => {
                 let comps = tag.split(':');
                 switch (comps[0]) {
                     case 'tx': {
                         let hash = comps[1];
                         this.getTransactionReceipt(hash).then((receipt) => {
-                            if (!receipt || receipt.blockNumber == null) { return null; }
+                            if (!receipt || receipt.blockNumber == null) {
+                                return null;
+                            }
                             receipt.hash = receipt.hash.toLowerCase();
                             this._emitted['t:' + hash] = receipt.blockNumber;
                             this.emit(hash, receipt);
                             return null;
-                        }).catch((error: Error) => {
+                        }).catch((error) => {
                             this.emit('error', error);
                         });
-
                         break;
                     }
-
                     case 'address': {
                         let address = comps[1];
                         if (this._balances[address]) {
                             newBalances[address] = this._balances[address];
                         }
-
                         this.getBalance(address, 'latest').then((balance) => {
                             let lastBalance = this._balances[address];
-                            if (lastBalance && balance.eq(lastBalance)) { return; }
+                            if (lastBalance && balance.eq(lastBalance)) {
+                                return;
+                            }
                             this._balances[address] = balance;
                             this.emit(address, balance);
                             return null;
-                        }).catch((error: Error) => { this.emit('error', error); });
-
+                        }).catch((error) => { this.emit('error', error); });
                         break;
                     }
                 }
             });
-
             this._lastBlockNumber = blockNumber;
-
             this._balances = newBalances;
-
             return null;
-        }).catch((error: Error) => { });
-
+        }).catch((error) => { });
         this.doPoll();
     }
-
-    resetEventsBlock(blockNumber: number): void {
+    resetEventsBlock(blockNumber) {
         this._lastBlockNumber = blockNumber - 1;
-        if (this.polling) { this._doPoll(); }
+        if (this.polling) {
+            this._doPoll();
+        }
     }
-
-    get network(): Network {
+    get network() {
         return this._network;
     }
-
-    getNetwork(): Promise<Network> {
+    getNetwork() {
         return this.ready;
     }
-
-    get blockNumber(): number {
+    get blockNumber() {
         return this._fastBlockNumber;
     }
-
-    get polling(): boolean {
+    get polling() {
         return (this._poller != null);
     }
-
-    set polling(value: boolean) {
+    set polling(value) {
         setTimeout(() => {
             if (value && !this._poller) {
                 this._poller = setInterval(this._doPoll.bind(this), this.pollingInterval);
                 this._doPoll();
-
-            } else if (!value && this._poller) {
+            }
+            else if (!value && this._poller) {
                 clearInterval(this._poller);
                 this._poller = null;
             }
         }, 0);
     }
-
-    get pollingInterval(): number {
+    get pollingInterval() {
         return this._pollingInterval;
     }
-
-    set pollingInterval(value: number) {
+    set pollingInterval(value) {
         if (typeof (value) !== 'number' || value <= 0 || parseInt(String(value)) != value) {
             throw new Error('invalid polling interval');
         }
-
         this._pollingInterval = value;
-
         if (this._poller) {
             clearInterval(this._poller);
-            this._poller = setInterval(() => { this._doPoll() }, this._pollingInterval);
+            this._poller = setInterval(() => { this._doPoll(); }, this._pollingInterval);
         }
     }
-
-    _getFastBlockNumber(): Promise<number> {
+    _getFastBlockNumber() {
         let now = getTime();
-
         // Stale block number, request a newer value
         if ((now - this._fastQueryDate) > 2 * this._pollingInterval) {
             this._fastQueryDate = now;
@@ -1443,69 +1211,66 @@ export class BaseProvider extends Provider {
                 return this._fastBlockNumber;
             });
         }
-
         return this._fastBlockNumberPromise;
     }
-
-    _setFastBlockNumber(blockNumber: number): void {
+    _setFastBlockNumber(blockNumber) {
         // Older block, maybe a stale request
-        if (this._fastBlockNumber != null && blockNumber < this._fastBlockNumber) { return; }
-
+        if (this._fastBlockNumber != null && blockNumber < this._fastBlockNumber) {
+            return;
+        }
         // Update the time we updated the blocknumber
         this._fastQueryDate = getTime();
-
         // Newer block number, use  it
         if (this._fastBlockNumber == null || blockNumber > this._fastBlockNumber) {
             this._fastBlockNumber = blockNumber;
             this._fastBlockNumberPromise = Promise.resolve(blockNumber);
         }
     }
-
     // @TODO: Add .poller which must be an event emitter with a 'start', 'stop' and 'block' event;
     //        this will be used once we move to the WebSocket or other alternatives to polling
-
-    waitForTransaction(transactionHash: string, confirmations?: number): Promise<TransactionReceipt> {
-        if (confirmations == null) { confirmations = 1; }
-
+    waitForTransaction(transactionHash, confirmations) {
+        if (confirmations == null) {
+            confirmations = 1;
+        }
         return this.getTransactionReceipt(transactionHash).then((receipt) => {
             if (confirmations === 0 || (receipt && receipt.confirmations >= confirmations)) {
                 return receipt;
             }
-
-            return <Promise<TransactionReceipt>>(new Promise((resolve) => {
-                let handler = (receipt: TransactionReceipt) => {
-                    if (receipt.confirmations < confirmations) { return; }
+            return (new Promise((resolve) => {
+                let handler = (receipt) => {
+                    if (receipt.confirmations < confirmations) {
+                        return;
+                    }
                     this.removeListener(transactionHash, handler);
                     resolve(receipt);
-                }
+                };
                 this.on(transactionHash, handler);
             }));
         });
     }
-
 }
-
-function checkBlockTag(blockTag: BlockTag): string {
-    if (blockTag == null) { return '0'; }
-
-    if (blockTag === 'earliest') { return '0'; }
-
+exports.BaseProvider = BaseProvider;
+function checkBlockTag(blockTag) {
+    if (blockTag == null) {
+        return '0';
+    }
+    if (blockTag === 'earliest') {
+        return '0';
+    }
     if (blockTag === 'latest' || blockTag === 'pending') {
         return "0";
     }
-
-    if (isHexString(blockTag)) { return bigNumberify(blockTag).toString(); }
-
+    if (bytes_1.isHexString(blockTag)) {
+        return bignumber_1.bigNumberify(blockTag).toString();
+    }
     try {
         if ('string' === typeof blockTag)
             return parseInt(blockTag).toString();
-
         return blockTag.toString();
     }
     catch (error) {
     }
-
     throw new Error('invalid blockTag');
 }
-
-defineReadOnly(Provider, 'inherits', inheritable(Provider));
+properties_1.defineReadOnly(abstract_provider_1.Provider, 'inherits', properties_1.inheritable(abstract_provider_1.Provider));
+//# sourceMappingURL=base-provider.js.map

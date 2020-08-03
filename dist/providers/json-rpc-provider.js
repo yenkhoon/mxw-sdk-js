@@ -1,56 +1,49 @@
 'use strict';
-
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (Object.hasOwnProperty.call(mod, k)) result[k] = mod[k];
+    result["default"] = mod;
+    return result;
+};
+Object.defineProperty(exports, "__esModule", { value: true });
 // See: https://github.com/ethereum/wiki/wiki/JSON-RPC
-
-import { BaseProvider } from './base-provider';
-
-import * as errors from '../errors';
-
-import { getNetwork } from '../utils/networks';
-import { toUtf8String } from '../utils/utf8';
-import { fetchJson, } from '../utils/web';
-import { encode as base64Encode, decode as base64Decode } from '../utils/base64';
-
-// Imported Types
-import { Network, Networkish } from '../utils/networks';
-import { ConnectionInfo } from '../utils/web';
-
-import { isUndefinedOrNull, isUndefinedOrNullOrEmpty } from '../utils/misc';
-
-function getResult(payload: { error?: { code?: number, data?: any, message?: string }, result?: any }): any {
+const base_provider_1 = require("./base-provider");
+const errors = __importStar(require("../errors"));
+const networks_1 = require("../utils/networks");
+const utf8_1 = require("../utils/utf8");
+const web_1 = require("../utils/web");
+const base64_1 = require("../utils/base64");
+const misc_1 = require("../utils/misc");
+function getResult(payload) {
     if (payload.error) {
         return payload.error;
     }
     return payload.result;
 }
-
-export class JsonRpcProvider extends BaseProvider {
-    readonly connection: ConnectionInfo;
-
-    constructor(url?: ConnectionInfo | string, network?: Networkish) {
-
+class JsonRpcProvider extends base_provider_1.BaseProvider {
+    constructor(url, network) {
         // One parameter, but it is a network name, so swap it with the URL
         if (typeof (url) === 'string') {
-            if (network === null && getNetwork(url)) {
+            if (network === null && networks_1.getNetwork(url)) {
                 network = url;
                 url = null;
             }
         }
-
         if (network) {
             // The network has been specified explicitly, we can use it
             super(network);
-
-        } else {
+        }
+        else {
             // The network is unknown, query the JSON-RPC for it
-            let ready: Promise<Network> = new Promise((resolve, reject) => {
+            let ready = new Promise((resolve, reject) => {
                 setTimeout(() => {
                     this.send('abci_info', []).then((result) => {
                         let chainId = 0;
                         if (result && result.response && result.response.data) {
                             chainId = result.response.data;
                         }
-                        return resolve(getNetwork(chainId));
+                        return resolve(networks_1.getNetwork(chainId));
                     }).catch((error) => {
                         reject(error);
                     });
@@ -58,54 +51,47 @@ export class JsonRpcProvider extends BaseProvider {
             });
             super(ready);
         }
-
         errors.checkNew(this, JsonRpcProvider);
-
         // Default URL
-        if (!url) { url = 'http://localhost:26657'; }
-
+        if (!url) {
+            url = 'http://localhost:26657';
+        }
         if (typeof (url) === 'string') {
             this.connection = {
                 url: url
             };
-        } else {
+        }
+        else {
             this.connection = url;
         }
-
         // Default request timeout
         if (!this.connection.timeout || 0 > this.connection.timeout) {
             this.connection.timeout = 60000;
         }
-
         // Configure polling interval
         if (this.connection.pollingInterval && 0 < this.connection.pollingInterval) {
             super.pollingInterval = this.connection.pollingInterval;
         }
     }
-
     get pollingInterval() {
         return super.pollingInterval;
     }
-
-    set pollingInterval(value: number) {
+    set pollingInterval(value) {
         super.pollingInterval = value;
     }
-
-    send(method: string, params: any): Promise<any> {
+    send(method, params) {
         let request = {
             method: method,
             params: params,
             id: 42,
             jsonrpc: "2.0"
         };
-
         this.emit('rpc', {
             action: 'request',
             request: request,
             provider: this
         });
-
-        return fetchJson(this.connection, null, JSON.stringify(request), getResult).then((result) => {
+        return web_1.fetchJson(this.connection, null, JSON.stringify(request), getResult).then((result) => {
             this.emit('rpc', {
                 action: 'response',
                 request: request,
@@ -115,8 +101,7 @@ export class JsonRpcProvider extends BaseProvider {
             return result;
         });
     }
-
-    perform(method: string, params: any): Promise<any> {
+    perform(method, params) {
         switch (method) {
             case 'sendTransaction':
                 return this.send('encode_and_broadcast_tx_sync', [params.signedTransaction]).then((result) => {
@@ -126,9 +111,8 @@ export class JsonRpcProvider extends BaseProvider {
                             return result;
                         }
                     }
-                    throw this.checkResponseLog(method, result, null, undefined, { method, params });
+                    throw this.checkResponseLog(method, result, null);
                 });
-
             case 'sendTransactionAsync':
                 return this.send('encode_and_broadcast_tx_async', [params.signedTransaction]).then((result) => {
                     if (0 == result.code) {
@@ -137,18 +121,16 @@ export class JsonRpcProvider extends BaseProvider {
                             return result;
                         }
                     }
-                    throw this.checkResponseLog(method, result, null, undefined, { method, params });
+                    throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getTransaction':
             case 'getTransactionReceipt':
-                return this.send('decoded_tx', [base64Encode(params.transactionHash), null]).then((result) => {
+                return this.send('decoded_tx', [base64_1.encode(params.transactionHash), null]).then((result) => {
                     // errors.debug("RECEIPT:", JSON.stringify(result));
                     if (result.tx_result && result.tx_result.log) {
                         try {
                             result.status = 0;
                             let logs = JSON.parse(result.tx_result.log);
-
                             if (0 < logs.length && "boolean" === typeof logs[0].success) {
                                 if (logs[0].success) {
                                     result.status = 1;
@@ -159,14 +141,12 @@ export class JsonRpcProvider extends BaseProvider {
                         catch (error) {
                         }
                     }
-
                     let returnError = this.checkResponseLog(method, result, null);
                     if (errors.NOT_FOUND == returnError.code) {
                         return null;
                     }
                     throw returnError;
                 });
-
             case 'getTransactionFee':
                 return this.send('query_fee', [params.unsignedTransaction]).then(result => {
                     if (result && result.amount) {
@@ -174,13 +154,12 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getTransactionFeeSetting':
                 return this.send('abci_query', [params.path, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = toUtf8String(base64Decode(result.response.value));
+                                let value = utf8_1.toUtf8String(base64_1.decode(result.response.value));
                                 return JSON.parse(value);
                             }
                             catch (error) {
@@ -189,7 +168,6 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getBlock':
                 if ("0" == params.blockTag) {
                     return this.getBlockNumber().then((blockNumber) => {
@@ -207,7 +185,6 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     return result;
                 });
-
             case 'getBlockInfo':
                 if ("0" == params.blockTag) {
                     return this.getBlockNumber().then((blockNumber) => {
@@ -225,26 +202,22 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     return result;
                 });
-
             case 'getBlockNumber':
                 return this.send('latest_block_height', []);
-
             case 'isWhitelisted':
                 return this.send('is_whitelisted', [params.address]).then(result => {
-                    if (!isUndefinedOrNullOrEmpty(result)) {
+                    if (!misc_1.isUndefinedOrNullOrEmpty(result)) {
                         return result;
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getKycAddress':
                 return this.send('abci_query', ["/custom/kyc/get_kyc_address/" + params.address, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         try {
                             let value = "";
-
-                            if (!isUndefinedOrNull(result.response.value)) {
-                                value = toUtf8String(base64Decode(result.response.value));
+                            if (!misc_1.isUndefinedOrNull(result.response.value)) {
+                                value = utf8_1.toUtf8String(base64_1.decode(result.response.value));
                             }
                             if ("" === value) {
                                 value = "0000000000000000000000000000000000000000000000000000000000000000";
@@ -256,14 +229,13 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getTokenState':
                 return this.send('abci_query', ["/custom/token/token_data/" + params.symbol, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = base64Decode(result.response.value);
-                                return JSON.parse(toUtf8String(value));
+                                let value = base64_1.decode(result.response.value);
+                                return JSON.parse(utf8_1.toUtf8String(value));
                             }
                             catch (error) {
                             }
@@ -271,14 +243,13 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getTokenList':
                 return this.send('abci_query', ["/custom/token/list-token-symbol", "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = base64Decode(result.response.value);
-                                return JSON.parse(toUtf8String(value));
+                                let value = base64_1.decode(result.response.value);
+                                return JSON.parse(utf8_1.toUtf8String(value));
                             }
                             catch (error) {
                             }
@@ -286,14 +257,13 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getTokenAccountState':
                 return this.send('abci_query', ["/custom/token/account/" + params.symbol + "/" + params.address, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = base64Decode(result.response.value);
-                                return JSON.parse(toUtf8String(value));
+                                let value = base64_1.decode(result.response.value);
+                                return JSON.parse(utf8_1.toUtf8String(value));
                             }
                             catch (error) {
                             }
@@ -301,7 +271,6 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getAccountState':
                 return this.send('account', [params.address]).then(result => {
                     if (result) {
@@ -309,19 +278,17 @@ export class JsonRpcProvider extends BaseProvider {
                             return JSON.parse(result);
                         }
                         catch (error) { }
-
                         return null;
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getNFTokenState':
                 return this.send('abci_query', ["/custom/nonFungible/token_data/" + params.symbol, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = base64Decode(result.response.value);
-                                return JSON.parse(toUtf8String(value));
+                                let value = base64_1.decode(result.response.value);
+                                return JSON.parse(utf8_1.toUtf8String(value));
                             }
                             catch (error) {
                             }
@@ -329,14 +296,13 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'getNFTokenItemState':
                 return this.send('abci_query', ["/custom/nonFungible/item_data/" + params.symbol + "/" + params.itemID, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = base64Decode(result.response.value);
-                                return JSON.parse(toUtf8String(value));
+                                let value = base64_1.decode(result.response.value);
+                                return JSON.parse(utf8_1.toUtf8String(value));
                             }
                             catch (error) {
                             }
@@ -344,14 +310,13 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw this.checkResponseLog(method, result, null);
                 });
-
             case 'resolveName':
                 return this.send('abci_query', ["/custom/nameservice/resolve/" + params.name, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = base64Decode(result.response.value);
-                                return toUtf8String(value);
+                                let value = base64_1.decode(result.response.value);
+                                return utf8_1.toUtf8String(value);
                             }
                             catch (error) {
                             }
@@ -363,14 +328,13 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw error;
                 });
-
             case 'lookupAddress':
                 return this.send('abci_query', ["/custom/nameservice/whois/" + params.address, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = base64Decode(result.response.value);
-                                return toUtf8String(value);
+                                let value = base64_1.decode(result.response.value);
+                                return utf8_1.toUtf8String(value);
                             }
                             catch (error) {
                             }
@@ -382,13 +346,12 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw error;
                 });
-
             case 'getAliasState':
                 return this.send('abci_query', ["/custom/nameservice/pending/" + params.address, "", params.blockTag, null]).then(result => {
                     if (result && result.response) {
                         if (result.response.value) {
                             try {
-                                let value = toUtf8String(base64Decode(result.response.value));
+                                let value = utf8_1.toUtf8String(base64_1.decode(result.response.value));
                                 return JSON.parse(value);
                             }
                             catch (error) {
@@ -401,62 +364,20 @@ export class JsonRpcProvider extends BaseProvider {
                     }
                     throw error;
                 });
-
-            case 'getMultiSigAccountState':
-                return this.send('abci_query', ["/custom/auth/get_multisig_acc/" + params.address, "", params.blockTag, null]).then(result => {
-                    if (result && result.response) {
-                        if (result.response.value) {
-                            try {
-                                let value = toUtf8String(base64Decode(result.response.value));
-                                return JSON.parse(value);
-                            }
-                            catch (error) {
-                            }
-                        }
-                    }
-                    let error = this.checkResponseLog(method, result, null);
-                    if (error && errors.NOT_FOUND == error.code) {
-                        return null;
-                    }
-                    throw error;
-                });
-
-            case 'getMultiSigPendingTx':
-                return this.send('abci_query', ["/custom/auth/get_multisig_pending_tx/" + params.address + "/" + params.txID, "", params.blockTag, null]).then(result => {
-                    if (result && result.response) {
-                        if (result.response.value) {
-                            try {
-                                let value = toUtf8String(base64Decode(result.response.value));
-                                return JSON.parse(value);
-                            }
-                            catch (error) {
-                            }
-                        }
-                    }
-                    let error = this.checkResponseLog(method, result, null);
-                    if (error && errors.NOT_FOUND == error.code) {
-                        return null;
-                    }
-                    throw error;
-                });
-
             case 'getStatus':
                 return this.send('status', []);
-
             default:
                 break;
         }
-
         return errors.throwError(method + ' not implemented', errors.NOT_IMPLEMENTED, { operation: method });
     }
-
     // checkResponseLog(method: string, log: string, result: any, params?: any): any {
-    checkResponseLog(method: string, result: any, code?: string, message?: string, params?: any): any {
-        return checkResponseLog(this, method, result, isUndefinedOrNullOrEmpty(code) ? errors.UNEXPECTED_RESULT : code, message, params);
+    checkResponseLog(method, result, code, message, params) {
+        return checkResponseLog(this, method, result, misc_1.isUndefinedOrNullOrEmpty(code) ? errors.UNEXPECTED_RESULT : code, message, params);
     }
 }
-
-function extractLog(log: any) {
+exports.JsonRpcProvider = JsonRpcProvider;
+function extractLog(log) {
     while ("string" === typeof (log)) {
         try {
             log = JSON.parse(log);
@@ -465,33 +386,31 @@ function extractLog(log: any) {
             break;
         }
     }
-
     if ("object" === typeof (log)) {
         return {
-            code: isUndefinedOrNullOrEmpty(log.code) ? -1 : log.code,
-            codespace: isUndefinedOrNullOrEmpty(log.codespace) ? "" : log.codespace,
-            message: isUndefinedOrNullOrEmpty(log.message) ? "" : log.message,
+            code: misc_1.isUndefinedOrNullOrEmpty(log.code) ? -1 : log.code,
+            codespace: misc_1.isUndefinedOrNullOrEmpty(log.codespace) ? "" : log.codespace,
+            message: misc_1.isUndefinedOrNullOrEmpty(log.message) ? "" : log.message,
             log: JSON.stringify(log)
-        }
+        };
     }
     return {
         code: -1,
         codespace: "",
         message: "",
         log: ("string" === typeof (log)) ? log : JSON.stringify(log)
-    }
+    };
 }
-
-function checkResponseLog(self: JsonRpcProvider, method: string, result: any, defaultCode: string, defaultMessage: string, params: any): any {
-    if (!params) { params = {}; }
-
+function checkResponseLog(self, method, result, defaultCode, defaultMessage, params) {
+    if (!params) {
+        params = {};
+    }
     let info = {
         code: -1,
         codespace: "",
         message: "",
         log: ""
     };
-
     if (result) {
         if (result.tx_result && result.tx_result.log) {
             info.log = result.tx_result.log;
@@ -519,7 +438,6 @@ function checkResponseLog(self: JsonRpcProvider, method: string, result: any, de
             }
         }
     }
-
     if (info.log) {
         info = extractLog(info.log);
     }
@@ -531,7 +449,6 @@ function checkResponseLog(self: JsonRpcProvider, method: string, result: any, de
         defaultMessage,
         params
     });
-
     if (info.codespace && info.code) {
         switch (info.codespace) {
             case "sdk":
@@ -547,7 +464,6 @@ function checkResponseLog(self: JsonRpcProvider, method: string, result: any, de
                         return errors.createError('insufficient fees', errors.INSUFFICIENT_FEES, { operation: method, info, response: result, params });
                 }
                 break;
-
             case "mxw":
                 switch (info.code) {
                     case 1000: // KYC registration is required
@@ -556,7 +472,6 @@ function checkResponseLog(self: JsonRpcProvider, method: string, result: any, de
                         return errors.createError('Duplicated KYC', errors.EXISTS, { operation: method, info, response: result, params });
                     case 1002: // Receiver KYC is required
                         return errors.createError('Receiver KYC is required', errors.RECEIVER_KYC_REQUIRED, { operation: method, info, response: result, params });
-
                     case 2001: // Token already exists
                         return errors.createError('token exists', errors.EXISTS, { operation: method, info, response: result, params });
                     case 2002: // Token does not exists
@@ -597,12 +512,10 @@ function checkResponseLog(self: JsonRpcProvider, method: string, result: any, de
                         return errors.createError('invalid item holder', errors.NOT_ALLOWED, { operation: method, info, response: result, params });
                     case 2110:
                         return errors.createError('token item not found', errors.NOT_FOUND, { operation: method, info, response: result, params });
-
                     case 3001: // Fee setting not found
                         return errors.createError('fee setting not found', errors.MISSING_FEES, { operation: method, info, response: result, params });
                     case 3002: // Token fee setting not found
                         return errors.createError('token fee setting not found', errors.MISSING_FEES, { operation: method, info, response: result, params });
-
                     case 4001: // Alias in used
                         return errors.createError('alias in used', errors.EXISTS, { operation: method, info, response: result, params });
                     case 4002: // No such pending alias
@@ -616,7 +529,6 @@ function checkResponseLog(self: JsonRpcProvider, method: string, result: any, de
                 }
         }
     }
-
     if (info.log) {
         // "transaction not found"
         if (0 <= info.log.indexOf(') not found') && info.log.startsWith("Tx (")) {
@@ -628,19 +540,17 @@ function checkResponseLog(self: JsonRpcProvider, method: string, result: any, de
             return errors.createError('block not found', errors.NOT_FOUND, { operation: method, info, response: result, params });
         }
     }
-
     try {
         defaultMessage = info.code + ": " + (info.message ? info.message : "");
     }
     catch (error) { }
-
-    if (!defaultCode) { defaultCode = errors.UNEXPECTED_RESULT; }
-    if (!defaultMessage) { defaultMessage = "invalid json response"; }
-
-    params = {
-        operation: method,
-        response: result,
-        ...params
+    if (!defaultCode) {
+        defaultCode = errors.UNEXPECTED_RESULT;
     }
+    if (!defaultMessage) {
+        defaultMessage = "invalid json response";
+    }
+    params = Object.assign({ operation: method, response: result }, params);
     return errors.createError(defaultMessage, defaultCode, params);
 }
+//# sourceMappingURL=json-rpc-provider.js.map
