@@ -177,7 +177,7 @@ export class NonFungibleTokenItem {
                     itemID: this.itemID,
                     memo: (overrides && overrides.memo) ? overrides.memo : ""
                 });
-                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx });
+                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
                 return tx;
             });
@@ -229,7 +229,7 @@ export class NonFungibleTokenItem {
                 metadata: metadata ? metadata : "",
                 memo: (overrides && overrides.memo) ? overrides.memo : ""
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -277,7 +277,7 @@ export class NonFungibleTokenItem {
                 itemID: this.itemID,
                 metadata
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -323,8 +323,8 @@ export class NonFungibleTokenItem {
                 itemID: this.itemID,
                 from: address,
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx });
-
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
+    
             return tx;
         });
     }

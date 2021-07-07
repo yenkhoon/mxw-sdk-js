@@ -391,7 +391,7 @@ export class FungibleToken {
                     value: value.toString(),
                     memo: (overrides && overrides.memo) ? overrides.memo : ""
                 });
-                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
+                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
                 return tx;
             });
@@ -445,7 +445,7 @@ export class FungibleToken {
                     owner: signerAddress,
                     memo: (overrides && overrides.memo) ? overrides.memo : ""
                 });
-                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
+                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
                 return tx;
             });
@@ -496,7 +496,7 @@ export class FungibleToken {
                 value: value.toString(),
                 memo: (overrides && overrides.memo) ? overrides.memo : ""
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -549,7 +549,7 @@ export class FungibleToken {
                     to: toAddress,
                     memo: (overrides && overrides.memo) ? overrides.memo : ""
                 });
-                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
+                tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
                 return tx;
             });
@@ -601,7 +601,7 @@ export class FungibleToken {
                 from: signerAddress,
                 memo: (overrides && overrides.memo) ? overrides.memo : ""
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -702,7 +702,7 @@ export class FungibleToken {
                 symbol: fungibleToken.symbol,
                 maxSupply: fungibleToken.maxSupply
             });
-            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });
@@ -831,7 +831,7 @@ export class FungibleToken {
                 owner: signerAddress,
                 memo: (overrides && overrides.memo) ? overrides.memo : "",
             });
-            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = signer.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });

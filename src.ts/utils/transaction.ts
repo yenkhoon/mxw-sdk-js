@@ -219,7 +219,7 @@ export function parse(rawTransaction: any): Transaction {
     return tx;
 }
 
-export function populateTransaction(transaction: any, provider: Provider, from: string | Promise<string>): Promise<Transaction> {
+export function populateTransaction(transaction: any, provider: Provider, from: string | Promise<string>, overrides: any): Promise<Transaction> {
     if (!Provider.isProvider(provider)) {
         errors.throwError('missing provider', errors.INVALID_ARGUMENT, {
             argument: 'provider',
@@ -230,15 +230,18 @@ export function populateTransaction(transaction: any, provider: Provider, from: 
     checkTransaction(transaction);
 
     let tx = shallowCopy(transaction);
-
     if (null == tx.fee) {
         errors.throwError("missing fee", errors.MISSING_FEES, {});
     }
-    if (null == tx.nonce) {
-        tx.nonce = provider.getTransactionCount(from);
-    }
-    if (null == tx.chainId) {
-        tx.chainId = provider.getNetwork().then((network) => network.chainId);
+
+    if (overrides && overrides.bulkSend) {
+    } else {
+        if (null == tx.nonce) {
+            tx.nonce = provider.getTransactionCount(from);
+        }
+        if (null == tx.chainId) {
+            tx.chainId = provider.getNetwork().then((network) => network.chainId);
+        }
     }
 
     return resolveProperties(tx);

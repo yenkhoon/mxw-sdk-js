@@ -33,6 +33,7 @@ export class Wallet extends AbstractSigner {
     private readonly signingKey: SigningKey;
 
     private accountNumber: BigNumber;
+    private chainId: string;
 
     constructor(privateKey: SigningKey | HDNode | Arrayish, provider?: Provider) {
         super();
@@ -115,7 +116,7 @@ export class Wallet extends AbstractSigner {
     sendTransaction(transaction: TransactionRequest, overrides?: any): Promise<TransactionResponse> {
         if (!this.provider) { errors.throwError('missing provider', errors.NOT_INITIALIZED, { argument: 'provider' }); }
 
-        return populateTransaction(transaction, this.provider, this.address).then((tx) => {
+        return populateTransaction(transaction, this.provider, this.address, overrides).then((tx) => {
             return this.sign(tx, overrides).then((signedTransaction) => {
                 return this.provider.sendTransaction(signedTransaction, overrides).catch(error => {
                     // Clear the cached nonce when failure happened to prevent it out of sequence
@@ -127,18 +128,32 @@ export class Wallet extends AbstractSigner {
     }
 
     sign(transaction: TransactionRequest, overrides?: any) {
+        let bulkSend = overrides && overrides.bulkSend;
         if (transaction.chainId == null || transaction.nonce == null || transaction.accountNumber == null) {
             transaction = shallowCopy(transaction);
 
             if (transaction.chainId == null) {
-                transaction.chainId = this.provider.getNetwork().then((network) => network.chainId);
+                if (bulkSend && undefined !== this.chainId) {
+                    transaction.chainId = this.chainId;
+                } else {
+                    transaction.chainId = this.provider.getNetwork().then((network) => network.chainId);
+                }
             }
             if (transaction.nonce == null) {
-                transaction.nonce = this.getTransactionCount("pending");
+                if (bulkSend && undefined !== this.nonce) {
+                    transaction.nonce = this.nonce;
+                } else {
+                    transaction.nonce = this.getTransactionCount("pending");
+                }
             }
             if (transaction.accountNumber == null) {
-                transaction.accountNumber = this.getAccountNumber();
+                if (bulkSend && undefined !== this.accountNumber) {
+                    transaction.accountNumber = this.accountNumber;
+                } else {
+                    transaction.accountNumber = this.getAccountNumber();
+                }                  
             }
+
         }
         return resolveProperties(transaction).then((tx) => {
             if (!tx.chainId || !tx.nonce || !tx.accountNumber || !tx.value || !tx.value.msg || !Array.isArray(tx.value.msg)) {
@@ -168,6 +183,17 @@ export class Wallet extends AbstractSigner {
                             tx.nonce = this.nonce.add(1);
                         }
                     }
+
+                    if (undefined !== this.chainId) {
+                        tx.chainId = this.chainId;
+                    }
+
+                    if (undefined !== this.accountNumber) {
+                        tx.accountNumber = this.accountNumber;
+                    }
+
+                    this.accountNumber = tx.accountNumber;
+                    this.chainId = tx.chainId;
                 }
                 this.nonce = tx.nonce;
                 sequence = tx.nonce.toString();
@@ -276,8 +302,7 @@ export class Wallet extends AbstractSigner {
                 memo: (overrides && overrides.memo) ? overrides.memo : "",
                 denom: (overrides && overrides.denom) ? overrides.denom : smallestUnitName
             });
-            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx });
-
+            tx.fee = (overrides && overrides.fee) ? overrides.fee : this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
             return tx;
         });
     }
@@ -333,7 +358,7 @@ export class Wallet extends AbstractSigner {
                 owner: this.address,
                 memo: (overrides && overrides.memo) ? overrides.memo : ""
             });
-            tx.fee = this.provider.getTransactionFee(undefined, undefined, { tx });
+            tx.fee = this.provider.getTransactionFee(undefined, undefined, { tx, bulkSend : (overrides) ? overrides.bulkSend : undefined  });
 
             return tx;
         });

@@ -126,7 +126,7 @@ export class MultiSigWallet extends Signer {
             if (!signerAddress) {
                 return errors.throwError('create multisig transaction', errors.MISSING_ARGUMENT, { arg: 'signerAddress' });
             }
-            return populateTransaction(transaction, this.provider, signerAddress).then((internalTransaction) => {
+            return populateTransaction(transaction, this.provider, signerAddress, overrides).then((internalTransaction) => {
                 return this.signInternalTransaction(internalTransaction, overrides).then((signedInternalTransaction) => {
                     if (signedInternalTransaction.hash) {
                         delete signedInternalTransaction.hash;
@@ -176,7 +176,7 @@ export class MultiSigWallet extends Signer {
         }
 
         return this.getPendingTransactionRequest(transactionId, overrides).then((pendingTx) => {
-            return populateTransaction(pendingTx, this.provider, this.signer.getAddress()).then((internalPendingTransaction) => {
+            return populateTransaction(pendingTx, this.provider, this.signer.getAddress(), overrides).then((internalPendingTransaction) => {
                 return this.signInternalTransaction(internalPendingTransaction, overrides);
             }).then((signedPendingTx) => {
                 return resolveProperties({ signerAddress: this.signer.getAddress() }).then(({ signerAddress }) => {
